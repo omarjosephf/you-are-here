@@ -51,9 +51,15 @@ window.YouAreHereCards = {
     // feature (centre, bar, orion, sol, or an arm: { arm, name, major }).
     function show(key, arm) {
       let f = null;
-      if (arm) {
+      if (arm && arm.landmark) {
+        const m = arm.landmark;
+        f = { name: m.name, kind: 'Landmark in the galaxy', galaxy: true, note: `Source: ${m.source}.`,
+          facts: [['What it is', m.what], ['Distance from the Sun', m.dist], ['How sure', m.sure], ['Seen from Earth', `in ${SKY.constellationOf(SKY.galacticToScene(m.l, m.b))}`]] };
+      } else if (arm) {
         const g = FACTS.galaxy[arm.major ? 'major' : 'minor'];
         f = { name: arm.name, kind: g.kind, facts: g.facts, galaxy: true };
+      } else if (key === 'paleBlueDot') {
+        f = Object.assign({ galaxy: true }, FACTS.paleBlueDot);
       } else if (FACTS.bodies[key]) f = FACTS.bodies[key];
       else if (FACTS.galaxy[key]) f = Object.assign({ galaxy: true }, FACTS.galaxy[key]);
       if (!f) { hide(); return; }
@@ -62,7 +68,16 @@ window.YouAreHereCards = {
       titleEl.textContent = f.name || '';
       fill(factsEl, f.facts || []);
       noteEl.textContent = f.note || '';
-      noteEl.hidden = !f.note;
+      if (f.link) {
+        const a = document.createElement('a');
+        a.href = f.link[1];
+        a.textContent = f.link[0];
+        a.target = '_blank';
+        a.rel = 'noopener';
+        if (f.note) noteEl.append(document.createTextNode(' '));
+        noteEl.append(a);
+      }
+      noteEl.hidden = !f.note && !f.link;
       liveEl.hidden = !!f.galaxy;
       cardEl.hidden = false;
       cardEl.setAttribute('aria-label', `${f.name}: facts`);

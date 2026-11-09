@@ -15,6 +15,32 @@
 */
 window.YouAreHereFacts = {
   asOf: '9 November 2026',
+  // Galaxy landmarks (stage 8): galactic longitude and latitude from SIMBAD;
+  // distances from the Sun with their uncertainty (SOURCES.md). 1 pc =
+  // 3.2616 light-years. sure: how well the distance is known.
+  landmarks: [
+    { id: 'gc', name: 'Sagittarius A*', l: 359.944, b: -0.046, kpc: 8.178, dist: '26,700 light-years (8,178 ± 26 pc)', source: 'GRAVITY Collaboration 2019', sure: 'Well measured (about 0.3%)', what: 'The black hole at the galactic centre' },
+    { id: 'orion', name: 'Orion Nebula', l: 209.010, b: -19.382, kpc: 0.388, dist: '1,270 light-years (388 ± 5 pc)', source: 'Kounkel et al. 2017 (VLBA); other measurements give 403 to 414 pc', sure: 'Well measured, though methods differ by about 6%', what: 'A star-forming nebula' },
+    { id: 'pleiades', name: 'Pleiades', l: 166.463, b: -23.615, kpc: 0.1362, dist: '444 light-years (136.2 ± 1.2 pc)', source: 'Melis et al. 2014 (VLBI)', sure: 'Well measured (about 1%)', what: 'A young star cluster' },
+    { id: 'hyades', name: 'Hyades', l: 179.628, b: -21.124, kpc: 0.0473, dist: '154 light-years (about 47.3 pc)', source: 'Gaia DR3 (Hunt & Reffert 2023)', sure: 'Well measured', what: 'An open star cluster' },
+    { id: 'crab', name: 'Crab Nebula', l: 184.555, b: -5.783, kpc: 1.90, dist: '6,200 light-years (1.90 +0.22/−0.18 kpc)', source: 'Lin et al. 2023 (pulsar parallax)', sure: 'Uncertain by 10 to 20%', what: 'The remains of an exploded star, with a pulsar at its centre' },
+    { id: 'eagle', name: 'Eagle Nebula', l: 16.962, b: 0.811, kpc: 1.70, dist: 'about 5,500 light-years (about 1.7 kpc)', source: 'Gaia DR3 (Hunt & Reffert 2023)', sure: 'Good to a few per cent', what: 'A star-forming nebula' },
+    { id: 'lagoon', name: 'Lagoon Nebula', l: 5.958, b: -1.167, kpc: 1.28, dist: '4,000 to 4,400 light-years (1.23 to 1.34 kpc)', source: 'Gaia DR3 and DR2', sure: 'Uncertain by about 8% (two Gaia releases differ)', what: 'A star-forming nebula' },
+    { id: 'carina', name: 'Carina Nebula', l: 287.602, b: -0.645, kpc: 2.35, dist: '7,700 light-years (2.35 ± 0.05 kpc)', source: 'Göppl & Preibisch 2022 (Gaia EDR3)', sure: 'Good to a few per cent', what: 'A star-forming region' },
+    { id: 'omega', name: 'Omega Centauri', l: 309.102, b: 14.968, kpc: 5.43, dist: '17,700 light-years (5.43 ± 0.05 kpc)', source: 'Baumgardt & Vasiliev 2021', sure: 'Well measured (about 1%)', what: 'A globular cluster, well above the galaxy’s disc' },
+  ],
+  // The Pale Blue Dot (stage 8). Time: NASA. Position: JPL Horizons.
+  paleBlueDot: {
+    ms: Date.UTC(1990, 1, 14, 4, 48),
+    helioEclipticAU: [-15.7416, -30.0575, 21.8572], // x, y, z, J2000 ecliptic (JPL Horizons, target -31)
+    name: 'The Pale Blue Dot', kind: 'Voyager 1, 14 February 1990',
+    facts: [
+      ['When', '04:48 GMT on 14 February 1990, 34 minutes before Voyager 1 turned its cameras off for good (NASA)'],
+      ['Where Voyager 1 was', 'about 6 billion km from Earth and 40.4 AU from the Sun, 32.8° above the plane of the planets (JPL Horizons)'],
+    ],
+    link: ['Carl Sagan’s words about it (The Planetary Society)', 'https://www.planetary.org/worlds/pale-blue-dot'],
+  },
+
   bodies: {
     sun: {
       name: 'The Sun', kind: 'Our star',

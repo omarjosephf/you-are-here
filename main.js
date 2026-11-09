@@ -134,9 +134,9 @@
     const MODEL = window.YouAreHereGalaxy;
     const GALAXY_R = MODEL.radiusUnits; // the drawn radius, scene units
     const GALAXY_DEFAULTS = { count: 100000, insideColor: '#ff6030', outsideColor: '#1b3984', spinSpeed: 0.04 };
-    const EXTRAS_DEFAULTS = { waves: false, shootingStars: true, navControls: true, earthInTour: true, labels: true, orbits: true, cards: true, belts: true };
+    const EXTRAS_DEFAULTS = { waves: false, shootingStars: true, navControls: true, earthInTour: true, labels: true, orbits: true, cards: true, belts: true, moving: true };
     // The tour (play button): how long one run takes, and whether it repeats.
-    const TOUR_DEFAULTS = { seconds: 150, repeat: true };
+    const TOUR_DEFAULTS = { seconds: 160, repeat: true };
     const TOUR_MIN_SECONDS = 30;
     const TOUR_MAX_SECONDS = 600;
     const Z = Object.assign({ start: 9, closest: 0.3, farthest: 30 }, CONFIG.zoom || {});
@@ -815,11 +815,12 @@
       earth: ['Earth', 'You are here. It turns once in 23.9 hours, tilted 23.4°, which gives us the seasons.'],
       luna: [MOON_CAPTION, null],
       mars: ['Mars', 'Its gravity is 3.7 m/s², about 38% of Earth’s.'],
-      jupiter: ['Jupiter', `142,984 km across, with 115 known moons (as of ${MOONS_AS_OF}).`],
-      saturn: ['Saturn', `It has 293 known moons (as of ${MOONS_AS_OF}).`],
+      jupiter: ['Jupiter', `142,984 km across, with 115 known moons (as of ${MOONS_AS_OF}). Here: Io, Europa, Ganymede and Callisto.`],
+      saturn: ['Saturn', `Its rings lie over its equator. It has 293 known moons (as of ${MOONS_AS_OF}).`],
       uranus: ['Uranus', 'Tilted 97.8°, it rolls around the Sun on its side, and spins backwards.'],
-      neptune: ['Neptune', 'About 4,515 million km from the Sun. One orbit takes about 164 years.'],
-      pluto: ['Pluto, a dwarf planet', 'One year on Pluto lasts about 248 Earth years.'],
+      neptune: ['Neptune', 'About 4,515 million km from the Sun. Its biggest moon, Triton, goes round it backwards.'],
+      pluto: ['Pluto, a dwarf planet', 'One year on Pluto lasts about 248 Earth years. Its moon Charon is about half its size.'],
+      paleBlueDot: ['The Pale Blue Dot', 'Earth from where Voyager 1 was on 14 February 1990, about 6 billion km away.'],
       system: ['The solar system', 'Squeezed to fit. At true scale, if Earth were 1 pixel wide, Neptune would be about 354,000 pixels from the Sun.'],
       finale: ['You are here', 'One star in one arm of the Milky Way.'],
     };
@@ -843,6 +844,11 @@
         const st = tourPlan[tourIndex];
         if (st && STOP_CAPTIONS[st.id] && tourClock > st.dur * Math.min(0.5, st.move * 0.7) && tourClock < st.dur - 0.25) return stopCaption(st.id);
         if (!st || st.id !== 'eclipse') return null;
+      }
+      // The Pale Blue Dot.
+      if (follow && follow.pbd && world === 'earth' && earth) {
+        const squeezed = SKY.SCALE_MODES[earth.scaleMode].distances !== 'true';
+        return { source: `stop:paleBlueDot:${squeezed ? 'squeezed' : 'true'}`, text: 'The Pale Blue Dot', sub: `Earth from where Voyager 1 was on 14 February 1990, about 6 billion km away.${squeezed ? ' (Distances are squeezed in this view; switch the scale to see it as far as it was.)' : ''}` };
       }
       // Go to a planet: its caption while you are close.
       if (!tourOn && follow && follow.planet && follow.planet.px > 40 && !(cards && cards.open)) return stopCaption(follow.planet.id);
@@ -1196,6 +1202,11 @@
               return;
             }
           }
+          // In the galaxy, a click or tap on a landmark shows its card.
+          if (world === 'galaxy' && !journey) {
+            const lm = pickLandmark(e.clientX, e.clientY);
+            if (lm) { showCard(null, { landmark: lm.m }); tapStart = null; return; }
+          }
           // Double-tap on touch screens flies to that spot.
           if (e.pointerType !== 'mouse') {
             if (now - lastTap.time < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) {
@@ -1286,15 +1297,16 @@
     // The stops, in order. weight = its share of the time; fixed = seconds.
     function buildTourPlan() {
       const ex = settings.extras;
-      // Tour, version 1: the galaxy, our arm and Sol; then the Sun, every
-      // planet and Pluto, the whole solar system, and back out.
+      // The grand tour: the galaxy, our arm and Sol; then the Sun, every
+      // planet with its moons and rings, Pluto, the whole solar system, the
+      // Pale Blue Dot, and back out.
       const stops = [{ id: 'galaxy', weight: 1.2 }, { id: 'orion', weight: 1.1 }];
       if (ex.earthInTour && window.YouAreHereEarth && window.YOU_ARE_HERE_EARTH_LAND) {
         stops.push({ id: 'sol', weight: 0.9 }, { id: 'toEarth', fixed: JOURNEY_SECONDS, earth: true }, { id: 'sun', weight: 1.0, earth: true });
         for (const id of ['mercury', 'venus', 'earth', 'luna', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']) {
           stops.push({ id, weight: id === 'earth' ? 1.2 : 1.0, earth: true, planet: !['earth', 'luna'].includes(id) });
         }
-        stops.push({ id: 'system', weight: 1.4, earth: true }, { id: 'toGalaxy', fixed: JOURNEY_SECONDS, earth: true });
+        stops.push({ id: 'system', weight: 1.4, earth: true }, { id: 'paleBlueDot', weight: 1.6, earth: true }, { id: 'toGalaxy', fixed: JOURNEY_SECONDS, earth: true });
       }
       stops.push({ id: 'finale', weight: 1.0 });
       const fixed = stops.reduce((a, st) => a + (st.fixed || 0), 0);
@@ -1353,12 +1365,14 @@
           if (world !== 'earth' || !b) { stop.dur = 0; break; }
           // Seen from the Sun's side, a little off, so it is mostly lit.
           const tmpL = new THREE.Vector3();
+          // Far enough out to show its moons (and Saturn's rings from a little above).
+          const span = { jupiter: 16, saturn: 6.5, neptune: 9, pluto: 10 }[stop.id] || 4.2;
           stop.pose = () => {
             to.target.copy(b.group.position);
-            to.radius = b.R * 4.2;
+            to.radius = b.R * span;
             tmpL.copy(earth.sunPos).sub(b.group.position).normalize();
             to.theta = nearAngle(Math.atan2(tmpL.x, tmpL.z) + 0.75, f.theta);
-            to.phi = 1.22;
+            to.phi = stop.id === 'saturn' ? 1.3 : 1.22;
           };
           stop.move = 0.6;
           stop.drift = -0.05;
@@ -1416,6 +1430,17 @@
           stop.pose = () => { to.target.copy(earth.sunPos); to.radius = SKY.distanceUnits(32, earth.scaleMode) * 1.9; to.theta = f.theta + 0.25; to.phi = 0.8; };
           stop.move = 0.6;
           break;
+        case 'paleBlueDot': {
+          if (world !== 'earth' || !earth || !PBD) { stop.dur = 0; break; }
+          if (!tourClockSnap) tourClockSnap = clock.snapshot();
+          ensureVoyager();
+          clock.setDate(PBD.ms);
+          earth.setTime(PBD.ms, true);
+          stop.pose = () => { pbdPose(to); to.theta = nearAngle(to.theta, f.theta); };
+          stop.move = 0.55;
+          stop.restoreClock = true;
+          break;
+        }
         case 'finale':
           stop.pose = () => { to.target.set(0, 0, 0); to.radius = startRadius() * 1.04; to.theta = f.theta - 0.7; to.phi = 0.55; };
           break;
@@ -1788,6 +1813,8 @@
       timebarAt = now;
       const note = scaleNoteText();
       if (scaleNoteEl.textContent !== note) scaleNoteEl.textContent = note;
+      updateMoving();
+      updateHash(false);
       const ms = clock.now();
       const eclipsing = earth && earth.eclipse.active;
       const rate = clock.live ? 'Live' : eclipsing ? 'Playing the eclipse' : clock.paused ? 'Paused' : SKY.rateName(clock.rate);
@@ -1882,6 +1909,344 @@
       if (!quiet) toast(`Scale: ${SKY.SCALE_MODES[mode].badge}`);
     }
     scaleSelect.addEventListener('change', () => setScaleMode(scaleSelect.value));
+
+    // =================================================================
+    // Story features (stage 8)
+    // =================================================================
+    const FACTS = window.YouAreHereFacts || {};
+
+    // ---- "You are moving": how far you have travelled since the page
+    // opened, around the Sun at 29.78 km/s (NASA Earth Fact Sheet) and around
+    // the galaxy at about 247 km/s (Reid et al. 2019). Real time, whatever
+    // the simulated clock is doing.
+    const movingEl = $('#moving');
+    const pageOpenedAt = performance.now();
+    function updateMoving() {
+      if (!settings.extras.moving) { if (movingEl.textContent) movingEl.textContent = ''; return; }
+      const s = (performance.now() - pageOpenedAt) / 1000;
+      const km = (v) => `${Math.round(s * v).toLocaleString()} km`;
+      movingEl.textContent = `Since you opened this page you have moved ${km(29.78)} around the Sun and ${km(247)} around the galaxy.`;
+    }
+
+    // ---- the date drawer: a date box, jump to the next event, copy a link ----
+    const timeToolsEl = $('#timeTools');
+    const dateInput = $('#dateInput');
+    function toggleTimeTools(force) {
+      const open = force !== undefined ? force : timeToolsEl.hidden;
+      timeToolsEl.hidden = !open;
+      timeDateEl.setAttribute('aria-expanded', String(open));
+      if (open) dateInput.value = new Date(clock.now()).toISOString().slice(0, 10);
+    }
+    timeDateEl.addEventListener('click', (e) => { e.stopPropagation(); toggleTimeTools(); });
+    document.addEventListener('pointerdown', (e) => {
+      if (!timeToolsEl.hidden && !timeToolsEl.contains(e.target) && !timeDateEl.contains(e.target)) toggleTimeTools(false);
+    });
+
+    // Runs fn in the solar system: straight away if already there,
+    // otherwise after the journey from the galaxy.
+    let afterJourney = null;
+    function inSolarSystem(fn) {
+      if (world === 'earth' && earth && !journey) { fn(); return; }
+      if (journey) return;
+      afterJourney = fn;
+      startJourney('earth', true);
+      if (!journey) afterJourney = null;
+    }
+
+    // "Where were the planets on ...": keeps the time of day, changes the date.
+    dateInput.addEventListener('change', () => {
+      const v = dateInput.value;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+      const keep = new Date(clock.now());
+      const [y, m, d] = v.split('-').map(Number);
+      const ms = Date.UTC(y, m - 1, d, keep.getUTCHours(), keep.getUTCMinutes());
+      if (earth && earth.eclipse.active) timeChanged();
+      clock.setDate(ms);
+      timeChanged();
+      inSolarSystem(() => { goToOnEarth('system'); toast(`The planets on ${fmtDay(clock.now())}`); });
+    });
+
+    // ---- jump to the next event (Astronomy Engine's searches) ----
+    const SEASON_NAMES = { mar_equinox: 'March equinox', jun_solstice: 'June solstice', sep_equinox: 'September equinox', dec_solstice: 'December solstice' };
+    const OUTER = ['Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
+    function jumpTo(ms, then) {
+      if (earth && earth.eclipse.active) timeChanged();
+      clock.setDate(ms);
+      timeChanged();
+      inSolarSystem(then);
+    }
+    function nextEvent(kind) {
+      const A = SKY.A;
+      const from = clock.now() + 60e3;
+      const t = SKY.timeOf(from);
+      const inRange = (x) => x > from && x <= clock.max;
+      try {
+        if (kind === 'solar') { inSolarSystem(() => startEclipseView()); return; }
+        if (kind === 'lunar') {
+          const e = SKY.nextLunarEclipse(from);
+          if (!inRange(e.peak)) { toast('No lunar eclipse left before 2100.'); return; }
+          jumpTo(e.peak, () => { goToOnEarth('luna'); toast(`${e.kind[0].toUpperCase()}${e.kind.slice(1)} lunar eclipse, ${fmtDay(e.peak)} (at its peak).`); });
+          return;
+        }
+        if (kind === 'season') {
+          const y = new Date(from).getUTCFullYear();
+          const list = [];
+          for (const yr of [y, y + 1]) {
+            if (yr > 2100) continue;
+            const s = A.Seasons(yr);
+            for (const k of Object.keys(SEASON_NAMES)) list.push([s[k].date.getTime(), SEASON_NAMES[k]]);
+          }
+          const next = list.filter(([ms]) => inRange(ms)).sort((a, b) => a[0] - b[0])[0];
+          if (!next) { toast('No equinox or solstice left before 2100.'); return; }
+          jumpTo(next[0], () => { goToOnEarth('earth'); faceSunSide(); toast(`${next[1]}, ${fmtDay(next[0])}.`); });
+          return;
+        }
+        if (kind === 'opposition' || kind === 'conjunction') {
+          const found = [];
+          for (const b of ['Mercury', 'Venus', ...OUTER]) {
+            const outer = OUTER.includes(b);
+            const targets = kind === 'opposition' ? (outer ? [[0, 'at opposition']] : []) : outer ? [[180, 'in conjunction with the Sun']] : [[0, 'in inferior conjunction (between Earth and the Sun)'], [180, 'in superior conjunction (beyond the Sun)']];
+            for (const [rel, what] of targets) {
+              const r = A.SearchRelativeLongitude(b, rel, t);
+              if (r && inRange(r.date.getTime())) found.push([r.date.getTime(), b, what]);
+            }
+          }
+          const next = found.sort((a, b) => a[0] - b[0])[0];
+          if (!next) { toast(`No ${kind} left before 2100.`); return; }
+          jumpTo(next[0], () => { goToOnEarth(next[1].toLowerCase()); toast(`${next[1]} ${next[2]}, ${fmtDay(next[0])}.`); });
+          return;
+        }
+        if (kind === 'transit') {
+          const found = [];
+          for (const b of ['Mercury', 'Venus']) {
+            const tr = A.SearchTransit(b, t);
+            if (tr && inRange(tr.peak.date.getTime())) found.push([tr.peak.date.getTime(), b]);
+          }
+          const next = found.sort((a, b) => a[0] - b[0])[0];
+          if (!next) { toast('No transit of Mercury or Venus left before 2100. (The next transit of Venus is in 2117.)'); return; }
+          jumpTo(next[0], () => { lookAtSunFromEarth(); toast(`Transit of ${next[1]}, ${fmtDay(next[0])}: it crosses the face of the Sun, seen from Earth.`); });
+        }
+      } catch (err) {
+        console.warn(err);
+        toast("Couldn't work out the next event.");
+      }
+    }
+    $('#nextSelect').addEventListener('change', (e) => {
+      const v = e.target.value;
+      e.target.value = '';
+      if (v) { toggleTimeTools(false); userInput(); nextEvent(v); }
+    });
+    // Earth seen with its day side, night side and sunset line (as the tour's Earth stop).
+    function faceSunSide() {
+      if (!earth) return;
+      const a = Math.atan2(earth.sunDir.x, earth.sunDir.z) + 1.25;
+      view.goalTheta = a + Math.round((view.goalTheta - a) / TAU) * TAU;
+    }
+    // From just beside Earth, looking at the Sun (for transits).
+    function lookAtSunFromEarth() {
+      if (!earth) return;
+      follow = null;
+      const d = earth.sunDir.clone().negate();
+      view.goalTarget.copy(earth.sunPos);
+      view.goalRadius = earth.sunDist * 0.96;
+      view.goalPhi = Math.acos(clamp(d.y, -1, 1));
+      const th = Math.atan2(d.x, d.z);
+      view.goalTheta = th + Math.round((view.goalTheta - th) / TAU) * TAU;
+      glide(4);
+      clampGoals();
+    }
+
+    // ---- the Pale Blue Dot ----
+    // Voyager 1 at 04:48 GMT on 14 February 1990 (NASA), placed from its JPL
+    // Horizons position through the same scale mapping as the planets; the
+    // camera looks back at Earth from there.
+    const PBD = FACTS.paleBlueDot || null;
+    let voyager = null;
+    function ensureVoyager() {
+      if (voyager || !earth || !PBD) return;
+      const group = new THREE.Group();
+      const c = document.createElement('canvas');
+      c.width = c.height = 64;
+      const ctx = c.getContext('2d');
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(32, 8); ctx.lineTo(32, 56); ctx.moveTo(8, 32); ctx.lineTo(56, 32); ctx.stroke();
+      const marker = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeCanvasTexture(c), color: 0xffe0a0, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false }));
+      marker.scale.set(0.02, 0.02, 1);
+      marker.renderOrder = 9;
+      const t = textTexture('Voyager 1, 14 February 1990', { fill: '#ffe9c8', core: '#ffffff', glow: 'rgba(255, 190, 120, 0.7)' });
+      const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: t.tex, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false }));
+      label.scale.set(0.04 * t.aspect, 0.04, 1);
+      label.center.set(0.5, -0.5);
+      label.renderOrder = 9;
+      group.add(marker, label);
+      earth.scene.add(group);
+      voyager = { group };
+    }
+    function voyagerPos(out) {
+      const h = PBD.helioEclipticAU;
+      const v = SKY.placeHelio([h[0], h[2], -h[1]], earth.scaleMode);
+      return out.set(earth.sunPos.x + v[0], earth.sunPos.y + v[1], earth.sunPos.z + v[2]);
+    }
+    function updateVoyager() {
+      if (!voyager) return;
+      voyagerPos(voyager.group.position);
+      voyager.group.visible = world === 'earth' && Math.abs(clock.now() - PBD.ms) < 2 * 864e5;
+    }
+    function goPaleBlueDot(fromTour) {
+      if (!earth || !PBD) return;
+      ensureVoyager();
+      if (earth.eclipse.active) timeChanged();
+      clock.setDate(PBD.ms);
+      earth.setTime(PBD.ms, true);
+      timeChanged();
+      follow = { pbd: true };
+      glide(5);
+      if (!fromTour) showCard('paleBlueDot');
+    }
+    const pbdV = new THREE.Vector3();
+    function pbdPose(to) {
+      voyagerPos(pbdV);
+      to.target.set(0, 0, 0);
+      to.radius = pbdV.length();
+      to.phi = Math.acos(clamp(pbdV.y / to.radius, -1, 1));
+      to.theta = Math.atan2(pbdV.x, pbdV.z);
+    }
+
+    // ---- galaxy landmarks ----
+    // Markers and names at their real directions and distances from the Sun
+    // (SIMBAD positions; distances in SOURCES.md), placed in the galaxy model
+    // around Sol. The galactic centre already has its own name.
+    const landmarks = [];
+    function buildLandmarks() {
+      for (const m of (FACTS.landmarks || []).filter((x) => x.id !== 'gc')) {
+        const l = m.l * Math.PI / 180;
+        const b = m.b * Math.PI / 180;
+        const d = m.kpc * MODEL.S;
+        const sp = MODEL.sunPosition;
+        const pos = new THREE.Vector3(sp[0] + Math.cos(b) * Math.cos(l) * d, sp[1] + Math.sin(b) * d, sp[2] - Math.cos(b) * Math.sin(l) * d);
+        const t = textTexture(m.name, { fill: '#ffe2c4', core: '#ffffff', glow: 'rgba(255, 170, 110, 0.7)' });
+        const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: t.tex, transparent: true, depthWrite: false, depthTest: false, sizeAttenuation: false, opacity: 0 }));
+        label.center.set(0.5, -0.3);
+        label.renderOrder = 3;
+        label.position.copy(pos);
+        const dot = new THREE.Sprite(new THREE.SpriteMaterial({ map: sunTexture, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, sizeAttenuation: false, opacity: 0 }));
+        dot.scale.set(0.018, 0.018, 1);
+        dot.position.copy(pos);
+        dot.renderOrder = 2;
+        galaxy.add(label, dot);
+        landmarks.push({ m, label, dot, aspect: t.aspect, alpha: 0, pos });
+      }
+    }
+    const lmPos = new THREE.Vector3();
+    const lmProj = new THREE.Vector3();
+    function updateLandmarks(dt) {
+      solMarker.getWorldPosition(tmpV);
+      const near = world === 'galaxy' && !journey ? smoothstep(4.2, 2.6, tmpV.distanceTo(camera.position)) : 0;
+      const fit = clamp(camera.aspect * 1.4, 0.62, 1);
+      const P = camera.projectionMatrix.elements;
+      const placed = [];
+      for (const lm of landmarks) {
+        const h = 0.042 * fit;
+        lm.label.scale.set(h * lm.aspect, h, 1);
+        let goal = (settings.extras.labels ? 1 : 0) * near;
+        lm.label.getWorldPosition(lmPos);
+        if (goal > 0) {
+          lmProj.copy(lmPos).project(camera);
+          const w = lm.label.scale.x * P[0];
+          const hh = lm.label.scale.y * P[5];
+          const box = [lmProj.x - w / 2, lmProj.y, lmProj.x + w / 2, lmProj.y + hh * 1.3];
+          if (lmProj.z > 1 || placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) goal = 0;
+          else placed.push(box);
+        }
+        lm.alpha += (goal - lm.alpha) * (1 - Math.exp(-dt * 4));
+        if (lm.alpha < 0.004) lm.alpha = 0;
+        lm.label.material.opacity = lm.alpha * 0.9;
+        lm.label.visible = lm.alpha > 0;
+        lm.dot.material.opacity = near * 0.9;
+        lm.dot.visible = near > 0.01;
+      }
+    }
+    function pickLandmark(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      let best = null;
+      let bestD = 24;
+      for (const lm of landmarks) {
+        if (!lm.dot.visible) continue;
+        lm.dot.getWorldPosition(lmPos).project(camera);
+        if (lmPos.z > 1) continue;
+        const x = rect.left + ((lmPos.x + 1) / 2) * rect.width;
+        const y = rect.top + ((1 - lmPos.y) / 2) * rect.height;
+        const d = Math.hypot(x - clientX, y - clientY);
+        if (d < bestD) { bestD = d; best = lm; }
+      }
+      return best;
+    }
+
+    // ---- shareable views: the view in the address (#w=...&t=...&f=...&s=...) ----
+    let lastGalaxyDest = 'overview';
+    function focusId() {
+      if (world !== 'earth') return lastGalaxyDest;
+      if (!follow) return view.target.lengthSq() < 1 ? 'earth' : 'system';
+      if (follow.pbd) return 'paleBlueDot';
+      if (follow.planet) return follow.planet.id;
+      if (earth && follow.obj === earth.moon) return 'luna';
+      if (earth && follow.obj === earth.sol) return 'sol';
+      return 'earth';
+    }
+    function viewHash() {
+      const p = new URLSearchParams();
+      p.set('w', world);
+      p.set('t', clock.live ? 'now' : new Date(clock.now()).toISOString().slice(0, 16) + 'Z');
+      p.set('f', focusId());
+      if (world === 'earth' && earth && earth.scaleMode !== 'illustrative') p.set('s', earth.scaleMode);
+      return '#' + p.toString();
+    }
+    let hashAt = 0;
+    function updateHash(force) {
+      const now = performance.now();
+      if (!force && (now - hashAt < 1500 || tourOn || capture || journey || lastInput === -Infinity)) return;
+      hashAt = now;
+      const h = viewHash();
+      if (h !== location.hash) {
+        try { history.replaceState(null, '', h); } catch (err) { /* some file:// pages refuse; the link still works when served */ }
+      }
+    }
+    function applyHash() {
+      if (!location.hash || location.hash.length < 3) return false;
+      const p = new URLSearchParams(location.hash.slice(1));
+      const w = p.get('w');
+      const t = p.get('t');
+      const f = p.get('f');
+      const s = p.get('s');
+      if (!w) return false;
+      if (w === 'galaxy' && (!f || f === 'overview') && (!t || t === 'now')) return false; // the starting view: let the tour play
+      if (tourOn) setTour(false);
+      if (t && t !== 'now') {
+        const ms = Date.parse(t);
+        if (Number.isFinite(ms)) clock.setDate(ms);
+      }
+      if (w === 'earth') {
+        if (!ensureEarth()) return true;
+        switchWorld('earth');
+        if (s && SKY.SCALE_MODES[s]) setScaleMode(s, true);
+        if (f === 'paleBlueDot') goPaleBlueDot(false);
+        else if (f) goToOnEarth(f);
+      } else if (f) {
+        goTo(f, false);
+      }
+      return true;
+    }
+    $('#copyLink').addEventListener('click', async () => {
+      updateHash(true);
+      try {
+        await navigator.clipboard.writeText(location.href);
+        toast('Link copied: it opens this view, on this date');
+      } catch (err) {
+        toast('Copy the address from the address bar: it holds this view');
+      }
+      toggleTimeTools(false);
+    });
 
     // ---- picture ----
     function download(blob, filename, keepMs = 2000) {
@@ -2022,6 +2387,7 @@
       $('#xOrbits').checked = settings.extras.orbits;
       $('#xCards').checked = settings.extras.cards;
       $('#xBelts').checked = settings.extras.belts;
+      $('#xMoving').checked = settings.extras.moving;
     }
 
     function renderEditor() {
@@ -2093,6 +2459,7 @@
     bindExtra('#xOrbits', 'orbits');
     bindExtra('#xCards', 'cards');
     bindExtra('#xBelts', 'belts');
+    bindExtra('#xMoving', 'moving');
 
     // Tour: how long it takes, whether it repeats, and the play buttons.
     const tourSecondsEl = $('#tourSeconds');
@@ -2192,6 +2559,7 @@
     const NAV_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        if (!timeToolsEl.hidden) { toggleTimeTools(false); return; }
         if (cards && cards.compareOpen) { cards.closeCompare(); return; }
         if (!goMenu.hidden) closeGoMenu(true);
         else if (!aboutEl.hidden) closeAbout();
@@ -2385,7 +2753,7 @@
           ['sol', 'Sol, the Sun'],
         ];
         if (planets) for (const b of planets.bodies) list.push([b.id, b.sub ? `${b.name} (${b.sub})` : b.name]);
-        list.push(['system', 'The whole solar system'], ['eclipse', 'The next solar eclipse'], ['sizes', 'Size line-up'], ['ladder', 'Light-time ladder'], ['galaxy', 'Back to the galaxy']);
+        list.push(['system', 'The whole solar system'], ['paleBlueDot', 'The Pale Blue Dot (1990)'], ['eclipse', 'The next solar eclipse'], ['sizes', 'Size line-up'], ['ladder', 'Light-time ladder'], ['galaxy', 'Back to the galaxy']);
         return list;
       }
       return [
@@ -2395,6 +2763,7 @@
         ['bar', 'The central bar'],
         ['orion', 'The Orion Arm (our arm)'],
         ['sol', 'Sol, our Sun'],
+        ['landmarks', 'Landmarks near us'],
         ['earth', 'Earth'],
         ['surprise', 'Surprise me'],
         ['sizes', 'Size line-up'],
@@ -2464,6 +2833,7 @@
       if (dest === 'sizes' || dest === 'ladder') { if (cards) cards.openCompare(dest); return; }
       if (cards) cards.closeCompare();
       if (world === 'galaxy') {
+        lastGalaxyDest = dest;
         const card = { core: 'centre', bar: 'bar', orion: 'orion', sol: 'sol' }[dest];
         if (card) showCard(card); else if (cards) cards.hide();
       }
@@ -2503,6 +2873,13 @@
           // From a little way out from the Sun, looking along the arm.
           const p = MODEL.sunPosition;
           followPoint(new THREE.Vector3(p[0] * 0.98, 0, p[2] - 0.35), 2.2, 0.9);
+          break;
+        }
+        case 'landmarks': {
+          // Around the Sun, from above, where the nearby landmarks are.
+          const p = MODEL.sunPosition;
+          followPoint(new THREE.Vector3(p[0], p[1], p[2]), 1.5, 0.6);
+          toast(coarsePointer ? 'Landmarks near us: tap one for its distance and how sure it is.' : 'Landmarks near us: click one for its distance and how sure it is.');
           break;
         }
         case 'surprise': {
@@ -2550,6 +2927,9 @@
           break;
         case 'galaxy':
           startJourney('galaxy', false);
+          return;
+        case 'paleBlueDot':
+          goPaleBlueDot(false);
           return;
         default: {
           const b = planets && planets.byId[dest];
@@ -2990,7 +3370,11 @@
         if (journey.t >= 0.45) { switchWorld(journey.to); journey.stage = 'reveal'; journey.t = 0; warp = 1; }
       } else {
         warp = 1 - smoothstep(0, 1.1, journey.t);
-        if (journey.t >= 1.1) { journey = null; warp = 0; }
+        if (journey.t >= 1.1) {
+          journey = null;
+          warp = 0;
+          if (afterJourney) { const fn = afterJourney; afterJourney = null; fn(); }
+        }
       }
       warpEl.style.opacity = warp.toFixed(3);
       warpEl.classList.toggle('on', warp > 0);
@@ -3224,6 +3608,7 @@
       applySize();
       hud.canvas.width = W;
       hud.canvas.height = Math.round(H * hud.region);
+      hud.tex.dispose(); // the canvas changed size: let three.js make the texture again at the new size
       hud.key = '';
       const stream = canvas.captureStream(30);
       let rec;
@@ -3378,7 +3763,16 @@
       }
 
       if (nav.lookX || nav.lookY || nav.moveX || nav.moveZ) applyNav(dt);
-      if (follow && follow.eclipse) {
+      if (follow && follow.pbd) {
+        if (earth && world === 'earth') {
+          pbdPose(tourTo);
+          view.goalTarget.copy(tourTo.target);
+          view.goalRadius = tourTo.radius;
+          view.goalPhi = tourTo.phi;
+          view.goalTheta = tourTo.theta + Math.round((view.goalTheta - tourTo.theta) / TAU) * TAU;
+          clampGoals();
+        }
+      } else if (follow && follow.eclipse) {
         if (earth && world === 'earth') {
           const v = earth.eclipseView();
           view.goalTarget.copy(v.target);
@@ -3467,10 +3861,12 @@
       if (world === 'earth' && earth) {
         run(() => { earthState = earth.update(dt, camera, { phase: shared.uPhase.value, ms: clock.now() }); });
         if (planets) run(() => { planets.opts.orbits = settings.extras.orbits; planets.opts.labels = settings.extras.labels; planets.update(dt, camera, clock.now()); });
+        run(() => updateVoyager());
         if (moons) run(() => { moons.opts.labels = settings.extras.labels; moons.opts.belts = settings.extras.belts; moons.update(dt, camera, clock.now()); });
       } else {
         run(() => { lastSolDistance = updateSolMarker(); });
         run(() => updateArmLabels(dt));
+        run(() => updateLandmarks(dt));
       }
       run(() => updateCaption(dt));
       run(() => updateRail());
@@ -3507,12 +3903,15 @@
     fontsReady.then(() => {
       makeSolLabels(); // drawn once the real font is ready
       buildArmLabels();
+      buildLandmarks();
     });
 
     if (configChangedNotice) toast('Using your latest changes from config.js');
     setStatus('Changes save automatically in this browser.');
 
     setTour(tourOn, { fade: false });
+    // A shared link (#w=...) opens that view instead of the tour.
+    try { applyHash(); } catch (err) { console.warn('Could not open the linked view', err); }
     last = performance.now();
     renderer.setAnimationLoop(frame);
 
@@ -3531,6 +3930,7 @@
         if (earth && follow.obj === earth.moon) return 'luna';
         if (earth && follow.obj === earth.sol) return 'sol';
         if (follow.planet) return follow.planet.id;
+        if (follow.pbd) return 'paleBlueDot';
         return follow.face ? 'face' : 'point';
       },
       get world() { return world; },
@@ -3556,6 +3956,9 @@
       get lastVideo() { return lastVideo; },
       saveVideo: (format) => startVideo(format),
       setScale: (mode) => setScaleMode(mode, true),
+      nextEvent: (kind) => nextEvent(kind),
+      updateHash: (force) => updateHash(force),
+      landmarksShown: () => landmarks.filter((l) => l.label.visible && l.alpha > 0.3).map((l) => l.m.name),
       get cards() { return cards; },
       videoChoice: () => videoType(),
       eclipse: () => { userInput(); startEclipseView(); },

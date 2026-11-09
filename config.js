@@ -27,6 +27,7 @@ window.YOU_ARE_HERE_CONFIG = {
     orbits: true,          // the planets' orbit lines (B)
     cards: true,           // info cards with facts about what you go to
     belts: true,           // the asteroid belt and the Kuiper belt
+    moving: true,          // "you are moving": how far you have travelled since opening the page
   },
 
   // The tour (the play button, or C). It flies through everything once in
@@ -34,7 +35,7 @@ window.YOU_ARE_HERE_CONFIG = {
   // Press V (or "Play for a video" in the editor) to play it once, full
   // screen, with no controls, ready to screen-record.
   tour: {
-    seconds: 150,    // how long one whole tour takes (17 stops, so about 8 seconds each)
+    seconds: 160,    // how long one whole tour takes (18 stops, so about 8 seconds each)
     repeat: true,    // start again when it ends (false = stop at the end)
   },
 

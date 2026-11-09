@@ -98,7 +98,22 @@
 
   <!-- Time: the one simulated clock (sky.js) -->
   <section class="timebar" id="timebar" aria-label="Time">
-    <p class="time-date" id="timeDate"></p>
+    <button class="time-date" id="timeDate" type="button" aria-expanded="false" aria-controls="timeTools" title="Choose a date, jump to an event, or copy a link to this view"></button>
+    <div class="time-tools" id="timeTools" hidden>
+      <label>Where was everything on
+        <input type="date" id="dateInput" min="1900-01-01" max="2100-12-31">
+      </label>
+      <select id="nextSelect" aria-label="Jump to the next event">
+        <option value="">Jump to the next&hellip;</option>
+        <option value="solar">Solar eclipse</option>
+        <option value="lunar">Lunar eclipse</option>
+        <option value="season">Equinox or solstice</option>
+        <option value="opposition">Opposition (an outer planet opposite the Sun)</option>
+        <option value="conjunction">Conjunction (a planet lined up with the Sun)</option>
+        <option value="transit">Transit of Mercury or Venus</option>
+      </select>
+      <button class="pill" id="copyLink" type="button">Copy a link to this view</button>
+    </div>
     <div class="time-row">
       <button class="round-btn small" id="timeSlower" type="button" aria-label="Time slower, or backwards" title="Slower, or backwards ([)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7l-5 5 5 5M18 7l-5 5 5 5"/></svg>
@@ -114,6 +129,7 @@
     </div>
     <p class="time-rate" id="timeRate" aria-live="polite"></p>
     <p class="scale-note" id="scaleNote"></p>
+    <p class="moving" id="moving" aria-live="off"></p>
     <label class="scale-pick">Scale
       <select id="scaleSelect" aria-label="Scale of sizes and distances">
         <option value="illustrative">Illustrative</option>
@@ -225,6 +241,7 @@
       <dt>Time (top right)</dt><dd>The date on screen. « and » change the speed (and run time backwards), the middle button pauses, Now returns to real time. 1900 to 2100.</dd>
       <dt class="key">[ and ]</dt><dd class="key">Time slower or backwards, faster</dd>
       <dt class="key">K</dt><dd class="key">Pause or resume time</dd>
+      <dt>The date (top right)</dt><dd>Pick any date from 1900 to 2100, jump to the next eclipse, equinox, opposition, conjunction or transit, or copy a link to this exact view</dd>
       <dt class="key">Y</dt><dd class="key">Back to now (live time)</dd>
       <dt class="key">T</dt><dd class="key">A shooting star, right now (around Earth)</dd>
       <dt class="key">N</dt><dd class="key">Names (arms and planets) on or off</dd>
@@ -256,6 +273,8 @@
       <li>Every planet's tilt and spin, from the IAU's rotation models (so Venus, Uranus and Pluto spin backwards).</li>
       <li>Where Io, Europa, Ganymede and Callisto are around Jupiter (Astronomy Engine), and where Saturn's rings start and end (NASA).</li>
       <li>The galactic plane meeting the solar system's plane at about 60&deg;.</li>
+      <li>The Pale Blue Dot view, from Voyager 1's real position at 04:48 GMT on 14 February 1990 (JPL Horizons), and the next eclipses, equinoxes, solstices, oppositions, conjunctions and transits.</li>
+      <li>Galaxy landmarks at their measured directions and distances; each card says how sure the distance is.</li>
     </ul>
     <h3>Illustrative</h3>
     <ul>
@@ -284,7 +303,7 @@
     <div class="editor-body">
       <section class="editor-section" aria-labelledby="tourTitle">
         <h3 id="tourTitle">Tour (the play button)</h3>
-        <p class="note">One smooth flight: the galaxy, the Orion Arm and Sol, then the Sun, every planet (with Luna) and Pluto, the whole solar system, and back out. Each stop has a short caption.</p>
+        <p class="note">The grand tour: the galaxy, the Orion Arm and Sol, then the Sun, every planet with its moons and rings, Pluto, the whole solar system and the Pale Blue Dot, and back out. Each stop has a short caption.</p>
         <div class="tour-length">
           <label for="tourSeconds">How long the whole tour takes</label>
           <div class="tour-length-row">
@@ -348,6 +367,7 @@
           <label class="check"><input id="xOrbits" type="checkbox"> Show the planets' orbits</label>
           <label class="check"><input id="xCards" type="checkbox"> Show info cards (facts about what you go to)</label>
           <label class="check"><input id="xBelts" type="checkbox"> Show the asteroid belt and the Kuiper belt</label>
+          <label class="check"><input id="xMoving" type="checkbox"> Show how far you have travelled since opening the page</label>
         </div>
       </details>
     </div>
