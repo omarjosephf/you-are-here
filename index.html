@@ -254,6 +254,7 @@
       <li>Where the Sun, the Moon, the planets and Pluto are on the clock's date, from Astronomy Engine (accurate to within about 1 arcminute).</li>
       <li>Earth's spin and tilt, day and night, the Moon's phase, and real solar and lunar eclipses.</li>
       <li>Every planet's tilt and spin, from the IAU's rotation models (so Venus, Uranus and Pluto spin backwards).</li>
+      <li>Where Io, Europa, Ganymede and Callisto are around Jupiter (Astronomy Engine), and where Saturn's rings start and end (NASA).</li>
       <li>The galactic plane meeting the solar system's plane at about 60&deg;.</li>
     </ul>
     <h3>Illustrative</h3>
@@ -262,6 +263,7 @@
       <li>Sizes and distances are not to scale unless the note under the clock says so: planets are enlarged, the Sun is shrunk and distances are squeezed.</li>
       <li>In the eclipse view the Sun and the Moon are drawn larger than they look, both by the same amount.</li>
       <li>Shooting stars are decoration. City lights are today's, whatever the date.</li>
+      <li>Titan, Triton and Charon follow simple average orbits (JPL), so their positions are approximate. The number and density of particles in Saturn's rings and in the asteroid and Kuiper belts are illustrative; their sizes and places are not.</li>
       <li>Surface colours come from processed maps; Uranus and Neptune are nearly featureless, and Pluto's colour is a tint on a grey map whose southern part was never photographed.</li>
     </ul>
     <h3>Comfort</h3>
@@ -345,6 +347,7 @@
           <label class="check"><input id="xLabels" type="checkbox"> Show names (the arms, the planets)</label>
           <label class="check"><input id="xOrbits" type="checkbox"> Show the planets' orbits</label>
           <label class="check"><input id="xCards" type="checkbox"> Show info cards (facts about what you go to)</label>
+          <label class="check"><input id="xBelts" type="checkbox"> Show the asteroid belt and the Kuiper belt</label>
         </div>
       </details>
     </div>
@@ -394,6 +397,7 @@
   <script src="earth.js"></script>
   <script src="planet-maps.js"></script>
   <script src="planets.js"></script>
+  <script src="moons.js"></script>
   <script src="facts.js"></script>
   <script src="cards.js"></script>
   <script src="main.js"></script>

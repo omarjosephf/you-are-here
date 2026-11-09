@@ -307,7 +307,7 @@ window.YouAreHerePlanets = {
       }
       for (const b of order) {
         const s = b.label;
-        let goal = opts.labels ? 1 - smoothstep(60, 140, b.px) : 0;
+        let goal = opts.labels ? 1 - smoothstep(25, 60, b.px) : 0;
         const h = 0.05 * fit;
         s.scale.set(h * s.userData.aspect, h, 1);
         if (goal > 0) {

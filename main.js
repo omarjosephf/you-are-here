@@ -134,7 +134,7 @@
     const MODEL = window.YouAreHereGalaxy;
     const GALAXY_R = MODEL.radiusUnits; // the drawn radius, scene units
     const GALAXY_DEFAULTS = { count: 100000, insideColor: '#ff6030', outsideColor: '#1b3984', spinSpeed: 0.04 };
-    const EXTRAS_DEFAULTS = { waves: false, shootingStars: true, navControls: true, earthInTour: true, labels: true, orbits: true, cards: true };
+    const EXTRAS_DEFAULTS = { waves: false, shootingStars: true, navControls: true, earthInTour: true, labels: true, orbits: true, cards: true, belts: true };
     // The tour (play button): how long one run takes, and whether it repeats.
     const TOUR_DEFAULTS = { seconds: 150, repeat: true };
     const TOUR_MIN_SECONDS = 30;
@@ -914,6 +914,7 @@
     let world = 'galaxy';
     let earth = null;
     let planets = null; // the other planets and Pluto (planets.js), made with Earth
+    let moons = null;   // moons, Saturn's rings and the belts (moons.js)
     // In the solar system the zoom range follows the scale mode (sky.js) and
     // whatever you are looking at: you can't go inside a planet or the Sun.
     const ZE = { start: 8, closest: 2.45, farthest: 1400, closeBegin: 3.6, closeFull: 2.75 };
@@ -1870,6 +1871,7 @@
       const rel = view.goalRadius / before;
       earth.setScale(mode);
       if (planets) planets.setScale(mode);
+      if (moons) moons.setScale(mode);
       updateEarthZoom();
       if (follow && follow.obj) { follow.obj.getWorldPosition(view.target); view.goalTarget.copy(view.target); }
       else if (view.target.lengthSq() > 1) { view.target.copy(earth.sunPos); view.goalTarget.copy(earth.sunPos); }
@@ -2019,6 +2021,7 @@
       $('#xLabels').checked = settings.extras.labels;
       $('#xOrbits').checked = settings.extras.orbits;
       $('#xCards').checked = settings.extras.cards;
+      $('#xBelts').checked = settings.extras.belts;
     }
 
     function renderEditor() {
@@ -2089,6 +2092,7 @@
     bindExtra('#xLabels', 'labels');
     bindExtra('#xOrbits', 'orbits');
     bindExtra('#xCards', 'cards');
+    bindExtra('#xBelts', 'belts');
 
     // Tour: how long it takes, whether it repeats, and the play buttons.
     const tourSecondsEl = $('#tourSeconds');
@@ -2947,6 +2951,10 @@
       if (window.YouAreHerePlanets) {
         planets = window.YouAreHerePlanets.create(THREE, { TAU, clamp, smoothstep, makeCanvasTexture, textTexture }, earth);
         planets.setViewport(shared.uViewH.value, starMaterial.uniforms.uMaxSize.value);
+        if (window.YouAreHereMoons) {
+          moons = window.YouAreHereMoons.create(THREE, { TAU, clamp, smoothstep, makeCanvasTexture, textTexture }, earth, planets);
+          moons.setViewport(shared.uViewH.value, starMaterial.uniforms.uMaxSize.value);
+        }
       }
       return true;
     }
@@ -3319,6 +3327,7 @@
         starMaterial.uniforms.uMaxSize.value = Math.min(MAX_POINT, 48 * (h / 900));
         if (earth) earth.setViewport(h, Math.min(MAX_POINT, 48 * (h / 900)));
         if (planets) planets.setViewport(h, Math.min(MAX_POINT, 48 * (h / 900)));
+        if (moons) moons.setViewport(h, Math.min(MAX_POINT, 48 * (h / 900)));
         return;
       }
       renderer.setPixelRatio(pixelRatio);
@@ -3329,6 +3338,7 @@
       starMaterial.uniforms.uMaxSize.value = Math.min(MAX_POINT, 48 * pixelRatio);
       if (earth) earth.setViewport(h * pixelRatio, Math.min(MAX_POINT, 48 * pixelRatio));
       if (planets) planets.setViewport(h * pixelRatio, Math.min(MAX_POINT, 48 * pixelRatio));
+      if (moons) moons.setViewport(h * pixelRatio, Math.min(MAX_POINT, 48 * pixelRatio));
     }
     let resizeQueued = false;
     window.addEventListener('resize', () => {
@@ -3457,6 +3467,7 @@
       if (world === 'earth' && earth) {
         run(() => { earthState = earth.update(dt, camera, { phase: shared.uPhase.value, ms: clock.now() }); });
         if (planets) run(() => { planets.opts.orbits = settings.extras.orbits; planets.opts.labels = settings.extras.labels; planets.update(dt, camera, clock.now()); });
+        if (moons) run(() => { moons.opts.labels = settings.extras.labels; moons.opts.belts = settings.extras.belts; moons.update(dt, camera, clock.now()); });
       } else {
         run(() => { lastSolDistance = updateSolMarker(); });
         run(() => updateArmLabels(dt));
@@ -3527,6 +3538,7 @@
       get earthState() { return earthState; },
       get earth() { return earth; },
       get planets() { return planets; },
+      get moons() { return moons; },
       get solPosition() { return solMarker.getWorldPosition(new THREE.Vector3()).toArray(); },
       journeyTo: (to) => startJourney(to, true),
       get tour() {

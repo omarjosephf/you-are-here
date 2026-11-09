@@ -26,6 +26,7 @@ window.YOU_ARE_HERE_CONFIG = {
     labels: true,          // names: the arms, the bar, the centre and the planets (N)
     orbits: true,          // the planets' orbit lines (B)
     cards: true,           // info cards with facts about what you go to
+    belts: true,           // the asteroid belt and the Kuiper belt
   },
 
   // The tour (the play button, or C). It flies through everything once in
