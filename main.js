@@ -134,7 +134,7 @@
     const MODEL = window.YouAreHereGalaxy;
     const GALAXY_R = MODEL.radiusUnits; // the drawn radius, scene units
     const GALAXY_DEFAULTS = { count: 100000, insideColor: '#ff6030', outsideColor: '#1b3984', spinSpeed: 0.04 };
-    const EXTRAS_DEFAULTS = { waves: false, shootingStars: true, navControls: true, earthInTour: true, labels: true, orbits: true };
+    const EXTRAS_DEFAULTS = { waves: false, shootingStars: true, navControls: true, earthInTour: true, labels: true, orbits: true, cards: true };
     // The tour (play button): how long one run takes, and whether it repeats.
     const TOUR_DEFAULTS = { seconds: 150, repeat: true };
     const TOUR_MIN_SECONDS = 30;
@@ -827,6 +827,9 @@
       const c = STOP_CAPTIONS[id];
       if (!c) return null;
       let sub = c[1];
+      if (id === 'system' && earth && SKY.SCALE_MODES[earth.scaleMode].distances === 'true') {
+        sub = 'Distances to scale here. If Earth were 1 pixel wide, Neptune would be about 354,000 pixels from the Sun.';
+      }
       if (id === 'luna' && earth) {
         const m = earth.moonInfo();
         if (m) sub = `${m.name}, ${m.lit}% lit on this date. Next full moon: ${m.nextFull ? fmtDay(m.nextFull) : 'unknown'}.`;
@@ -842,7 +845,7 @@
         if (!st || st.id !== 'eclipse') return null;
       }
       // Go to a planet: its caption while you are close.
-      if (!tourOn && follow && follow.planet && follow.planet.px > 40) return stopCaption(follow.planet.id);
+      if (!tourOn && follow && follow.planet && follow.planet.px > 40 && !(cards && cards.open)) return stopCaption(follow.planet.id);
       if (world !== 'earth' || !earth) return null;
       const ec = earth.eclipse;
       if (ec.active && ec.info && ec.blend > 0.5) {
@@ -1180,6 +1183,18 @@
               return;
             }
           }
+          // In the solar system, a click or tap on (or near) a body flies there.
+          if (world === 'earth' && earth && planets && !journey) {
+            const picked = pickBody(e.clientX, e.clientY);
+            if (picked) {
+              // Already there: just show its card. Otherwise fly to it.
+              const here = follow && follow.planet ? follow.planet.id : follow && follow.obj === earth.moon ? 'luna' : follow && follow.obj === earth.sol ? 'sol' : (!follow && view.target.lengthSq() < 1 ? 'earth' : null);
+              if (picked === here) showCard({ earth: 'earth', luna: 'moon', sol: 'sun' }[picked] || picked);
+              else { userInput(); goToOnEarth(picked); }
+              tapStart = null;
+              return;
+            }
+          }
           // Double-tap on touch screens flies to that spot.
           if (e.pointerType !== 'mouse') {
             if (now - lastTap.time < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) {
@@ -1192,6 +1207,29 @@
         }
         tapStart = null;
       }
+    }
+    // The body nearest a screen point (within about 26 pixels of its centre
+    // or its edge), for picking planets with a click or tap.
+    const pickV = new THREE.Vector3();
+    function pickBody(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const cands = [['sol', earth.sol, earth.sunR], ['earth', null, earth.R], ['luna', earth.moon, earth.moon.scale.x * earth.MOON_R],
+        ...planets.bodies.map((b) => [b.id, b.group, b.R])];
+      const pxPerUnit = rect.height / (2 * Math.tan((camera.fov * Math.PI) / 360));
+      let best = null;
+      let bestD = Infinity;
+      for (const [id, obj, R] of cands) {
+        if (obj) obj.getWorldPosition(pickV); else pickV.set(0, 0, 0);
+        const dist = pickV.distanceTo(camera.position);
+        pickV.project(camera);
+        if (pickV.z > 1) continue;
+        const x = rect.left + ((pickV.x + 1) / 2) * rect.width;
+        const y = rect.top + ((1 - pickV.y) / 2) * rect.height;
+        const rPx = (R * pxPerUnit) / Math.max(1e-6, dist);
+        const d = Math.hypot(x - clientX, y - clientY) - rPx;
+        if (d < 26 && d < bestD) { bestD = d; best = id; }
+      }
+      return best;
     }
     canvas.addEventListener('pointerup', endPointer);
     canvas.addEventListener('pointercancel', endPointer);
@@ -1557,6 +1595,7 @@
       tourBtn.setAttribute('aria-label', on ? 'Stop tour' : 'Play the tour');
       keepAwake(on || !!capture);
       if (on) {
+        if (cards) { cards.hide(); cards.closeCompare(); }
         tourOnce = !!opts.once;
         tourBegin(opts.fade !== false);
       } else {
@@ -1790,6 +1829,58 @@
     timePlayBtn.addEventListener('click', timePause);
     timeNowBtn.addEventListener('click', timeNow);
 
+    // ---- info cards and the compare panels (cards.js, facts.js) ----
+    // A body's average colour, from its map (for the size line-up).
+    function colorOf(id) {
+      const M = window.YOU_ARE_HERE_PLANET_MAPS;
+      if (id === 'earth') return '#5a8cff';
+      if (!M || !M[id]) return '#cccccc';
+      const pal = Uint8Array.from(atob(M[id].palette), (c) => c.charCodeAt(0));
+      const idx = Uint8Array.from(atob(M[id].data), (c) => c.charCodeAt(0));
+      let r = 0, g = 0, b = 0;
+      for (let i = 0; i < idx.length; i++) { r += pal[idx[i] * 3]; g += pal[idx[i] * 3 + 1]; b += pal[idx[i] * 3 + 2]; }
+      const n = idx.length;
+      const tint = id === 'pluto' ? [1, 0.86, 0.72] : [1, 1, 1];
+      return `rgb(${Math.round((r / n) * tint[0])}, ${Math.round((g / n) * tint[1])}, ${Math.round((b / n) * tint[2])})`;
+    }
+    // Rungs beyond the solar system for the light-time ladder (SOURCES.md):
+    // the galactic centre at 8.15 kpc (Reid et al. 2019) and the Orion
+    // Nebula at 388 pc (Kounkel et al. 2017); 1 pc = 3.2616 light-years.
+    const YEAR_S = 365.25 * 86400;
+    function ladderExtras() {
+      return [
+        { name: 'Orion Nebula', sec: 388 * 3.2616 * YEAR_S, label: 'about 1,270 years' },
+        { name: 'Galactic centre', sec: 8150 * 3.2616 * YEAR_S, label: 'about 26,600 years' },
+      ];
+    }
+    const cards = window.YouAreHereCards
+      ? window.YouAreHereCards.create({ SKY, $, clock, fmtDay, colorOf, ladderExtras })
+      : null;
+    function showCard(key, arm) {
+      if (!cards) return;
+      if (!settings.extras.cards || tourOn) { cards.hide(); return; }
+      cards.show(key, arm);
+    }
+
+    // ---- scale (solar system): illustrative, true sizes, true distances, both ----
+    const scaleSelect = $('#scaleSelect');
+    function setScaleMode(mode, quiet) {
+      if (!earth || !SKY.SCALE_MODES[mode]) return;
+      const before = focusRadius();
+      const rel = view.goalRadius / before;
+      earth.setScale(mode);
+      if (planets) planets.setScale(mode);
+      updateEarthZoom();
+      if (follow && follow.obj) { follow.obj.getWorldPosition(view.target); view.goalTarget.copy(view.target); }
+      else if (view.target.lengthSq() > 1) { view.target.copy(earth.sunPos); view.goalTarget.copy(earth.sunPos); }
+      const after = focusRadius();
+      view.radius = view.goalRadius = clamp(rel * after, ZE.closest, ZE.farthest);
+      clampGoals();
+      scaleSelect.value = mode;
+      if (!quiet) toast(`Scale: ${SKY.SCALE_MODES[mode].badge}`);
+    }
+    scaleSelect.addEventListener('change', () => setScaleMode(scaleSelect.value));
+
     // ---- picture ----
     function download(blob, filename, keepMs = 2000) {
       const url = URL.createObjectURL(blob);
@@ -1848,7 +1939,7 @@
     showUiBtn.addEventListener('click', () => toggleUI(false));
 
     // ---- help ----
-    function openHelp() { helpEl.hidden = false; helpBtn.setAttribute('aria-expanded', 'true'); }
+    function openHelp() { if (cards) cards.closeCompare(); helpEl.hidden = false; helpBtn.setAttribute('aria-expanded', 'true'); }
     function closeHelp() { helpEl.hidden = true; helpBtn.setAttribute('aria-expanded', 'false'); }
     helpBtn.addEventListener('click', (e) => { e.stopPropagation(); if (helpEl.hidden) openHelp(); else closeHelp(); });
     document.addEventListener('pointerdown', (e) => {
@@ -1858,7 +1949,7 @@
     // ---- about ----
     const aboutEl = $('#about');
     const aboutBtn = $('#aboutBtn');
-    function openAbout() { closeHelp(); aboutEl.hidden = false; aboutBtn.setAttribute('aria-expanded', 'true'); $('#xCalm').checked = reducedMotion; }
+    function openAbout() { closeHelp(); if (cards) cards.closeCompare(); aboutEl.hidden = false; aboutBtn.setAttribute('aria-expanded', 'true'); $('#xCalm').checked = reducedMotion; }
     function closeAbout() { aboutEl.hidden = true; aboutBtn.setAttribute('aria-expanded', 'false'); }
     aboutBtn.addEventListener('click', (e) => { e.stopPropagation(); if (aboutEl.hidden) openAbout(); else closeAbout(); });
     document.addEventListener('pointerdown', (e) => {
@@ -1877,6 +1968,7 @@
     // ---- editor ----
     function openEditor() {
       closeHelp();
+      if (cards) cards.closeCompare();
       editorEl.classList.add('open');
       editorEl.removeAttribute('inert');
       editorEl.setAttribute('aria-hidden', 'false');
@@ -1926,6 +2018,7 @@
       $('#xNav').checked = settings.extras.navControls;
       $('#xLabels').checked = settings.extras.labels;
       $('#xOrbits').checked = settings.extras.orbits;
+      $('#xCards').checked = settings.extras.cards;
     }
 
     function renderEditor() {
@@ -1985,6 +2078,7 @@
       saveSettings();
       if (key === 'earthInTour') renderTourSettings();
       if (key === 'navControls') applyNavVisibility();
+      if (key === 'cards' && !value && cards) cards.hide();
       renderLook();
     }
     const bindExtra = (id, key) => $(id).addEventListener('change', (e) => setExtra(key, e.target.checked));
@@ -1994,6 +2088,7 @@
     bindExtra('#xNav', 'navControls');
     bindExtra('#xLabels', 'labels');
     bindExtra('#xOrbits', 'orbits');
+    bindExtra('#xCards', 'cards');
 
     // Tour: how long it takes, whether it repeats, and the play buttons.
     const tourSecondsEl = $('#tourSeconds');
@@ -2093,10 +2188,12 @@
     const NAV_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        if (cards && cards.compareOpen) { cards.closeCompare(); return; }
         if (!goMenu.hidden) closeGoMenu(true);
         else if (!aboutEl.hidden) closeAbout();
         else if (!helpEl.hidden) closeHelp();
         else if (editorOpen()) closeEditor();
+        else if (cards && cards.open) cards.hide();
         return;
       }
       const t = e.target;
@@ -2112,7 +2209,7 @@
         updateNav();
         return;
       }
-      if (e.repeat && /^[cehfnpotrgvjlkybim0-9 \[\]]$/i.test(e.key)) return;
+      if (e.repeat && /^[cehfnpotrgvjlkybimx0-9 \[\]]$/i.test(e.key)) return;
       const onButton = t && t.closest && t.closest('button, [role="slider"], summary');
       if (onButton && (e.key === ' ' || e.key === 'Enter')) return;
 
@@ -2128,6 +2225,12 @@
           setExtra('labels', !settings.extras.labels);
           toast(settings.extras.labels ? 'Names on' : 'Names off');
           break;
+        case 'x': case 'X': {
+          if (world !== 'earth' || !earth) { toast('The scale switch works in the solar system. Press J to go there.'); break; }
+          const ids = Object.keys(SKY.SCALE_MODES);
+          setScaleMode(ids[(ids.indexOf(earth.scaleMode) + 1) % ids.length]);
+          break;
+        }
         case 'b': case 'B':
           setExtra('orbits', !settings.extras.orbits);
           toast(settings.extras.orbits ? 'Orbits on' : 'Orbits off');
@@ -2278,7 +2381,7 @@
           ['sol', 'Sol, the Sun'],
         ];
         if (planets) for (const b of planets.bodies) list.push([b.id, b.sub ? `${b.name} (${b.sub})` : b.name]);
-        list.push(['system', 'The whole solar system'], ['eclipse', 'The next solar eclipse'], ['galaxy', 'Back to the galaxy']);
+        list.push(['system', 'The whole solar system'], ['eclipse', 'The next solar eclipse'], ['sizes', 'Size line-up'], ['ladder', 'Light-time ladder'], ['galaxy', 'Back to the galaxy']);
         return list;
       }
       return [
@@ -2290,6 +2393,8 @@
         ['sol', 'Sol, our Sun'],
         ['earth', 'Earth'],
         ['surprise', 'Surprise me'],
+        ['sizes', 'Size line-up'],
+        ['ladder', 'Light-time ladder'],
       ];
     }
 
@@ -2352,6 +2457,12 @@
       if (fromUser) userInput();
       closeGoMenu();
       if (journey) return;
+      if (dest === 'sizes' || dest === 'ladder') { if (cards) cards.openCompare(dest); return; }
+      if (cards) cards.closeCompare();
+      if (world === 'galaxy') {
+        const card = { core: 'centre', bar: 'bar', orion: 'orion', sol: 'sol' }[dest];
+        if (card) showCard(card); else if (cards) cards.hide();
+      }
       if (world === 'earth') { goToOnEarth(dest); return; }
       if (dest === 'earth') { startJourney('earth', false); return; }
       glide(4);
@@ -2404,6 +2515,8 @@
 
     function goToOnEarth(dest) {
       follow = null;
+      const card = { earth: 'earth', luna: 'moon', sol: 'sun' }[dest] || (planets && planets.byId[dest] ? dest : null);
+      if (card) showCard(card); else if (cards) cards.hide();
       if (dest !== 'eclipse' && earth && earth.eclipse.active) earth.stopEclipse(); // the clock stays on the eclipse's date
       glide(4);
       switch (dest) {
@@ -3340,6 +3453,7 @@
       };
       run(() => step(dt));
       run(() => updateTimebar());
+      if (cards) run(() => cards.update());
       if (world === 'earth' && earth) {
         run(() => { earthState = earth.update(dt, camera, { phase: shared.uPhase.value, ms: clock.now() }); });
         if (planets) run(() => { planets.opts.orbits = settings.extras.orbits; planets.opts.labels = settings.extras.labels; planets.update(dt, camera, clock.now()); });
@@ -3429,6 +3543,8 @@
       get video() { return capture ? { W: capture.W, H: capture.H, type: capture.type, fade: capture.fade, ending: !!capture.ending } : null; },
       get lastVideo() { return lastVideo; },
       saveVideo: (format) => startVideo(format),
+      setScale: (mode) => setScaleMode(mode, true),
+      get cards() { return cards; },
       videoChoice: () => videoType(),
       eclipse: () => { userInput(); startEclipseView(); },
       shootingStar: spawnMeteor,

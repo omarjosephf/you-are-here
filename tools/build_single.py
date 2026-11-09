@@ -46,7 +46,7 @@ assert html.count(link) == 1
 html = html.replace(link, '  <style>\n' + css + '\n  </style>\n')
 
 three = safe(three_path.read_text(encoding='utf-8'), 'three')
-for name in ('config.js', 'galaxy-model.js', 'earth-map.js', 'astronomy.browser.min.js', 'sky.js', 'earth.js', 'planet-maps.js', 'planets.js', 'main.js'):
+for name in ('config.js', 'galaxy-model.js', 'earth-map.js', 'astronomy.browser.min.js', 'sky.js', 'earth.js', 'planet-maps.js', 'planets.js', 'facts.js', 'cards.js', 'main.js'):
     tag = f'<script src="{name}"></script>'
     assert html.count(tag) == 1, tag
     code = safe((proj / name).read_text(encoding='utf-8'), name)

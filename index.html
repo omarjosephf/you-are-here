@@ -114,12 +114,42 @@
     </div>
     <p class="time-rate" id="timeRate" aria-live="polite"></p>
     <p class="scale-note" id="scaleNote"></p>
+    <label class="scale-pick">Scale
+      <select id="scaleSelect" aria-label="Scale of sizes and distances">
+        <option value="illustrative">Illustrative</option>
+        <option value="trueSizes">True sizes</option>
+        <option value="trueDistances">True distances</option>
+        <option value="trueScale">True scale (both)</option>
+      </select>
+    </label>
   </section>
 
   <!-- Captions: short facts that type themselves out -->
   <div class="caption off" id="caption" role="status">
     <span class="caption-text" id="captionText"></span><span class="caption-caret" aria-hidden="true"></span>
     <span class="caption-sub" id="captionSub"></span>
+  </div>
+
+  <!-- Info card: facts about what you're looking at (facts.js), with live values -->
+  <aside class="card" id="card" aria-labelledby="cardTitle" hidden>
+    <button class="round-btn small card-close" id="cardClose" type="button" aria-label="Close the card">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>
+    </button>
+    <p class="card-kind" id="cardKind"></p>
+    <h2 id="cardTitle"></h2>
+    <dl class="card-facts" id="cardFacts"></dl>
+    <dl class="card-live" id="cardLive"></dl>
+    <p class="card-note" id="cardNote" hidden></p>
+  </aside>
+
+  <!-- Compare: the size line-up and the light-time ladder -->
+  <div class="help compare" id="compare" role="dialog" aria-labelledby="compareTitle" hidden>
+    <button class="round-btn small card-close" id="compareClose" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>
+    </button>
+    <h2 id="compareTitle"></h2>
+    <div class="compare-body" id="compareBody"></div>
+    <p class="help-note" id="compareNote"></p>
   </div>
 
   <!-- Zoom rail -->
@@ -199,6 +229,8 @@
       <dt class="key">T</dt><dd class="key">A shooting star, right now (around Earth)</dd>
       <dt class="key">N</dt><dd class="key">Names (arms and planets) on or off</dd>
       <dt class="key">B</dt><dd class="key">The planets' orbits on or off</dd>
+      <dt class="key">X</dt><dd class="key">Scale in the solar system: illustrative, true sizes, true distances, both</dd>
+      <dt>Click or tap a planet</dt><dd>Fly to it and show its info card</dd>
       <dt class="key">O</dt><dd class="key">Ocean waves on or off</dd>
       <dt class="key">R</dt><dd class="key">Back to the starting view</dd>
       <dt class="key">C</dt><dd class="key">Play the tour from the start, or stop it</dd>
@@ -312,6 +344,7 @@
           <label class="check"><input id="xNav" type="checkbox"> Show the map and arrow pads</label>
           <label class="check"><input id="xLabels" type="checkbox"> Show names (the arms, the planets)</label>
           <label class="check"><input id="xOrbits" type="checkbox"> Show the planets' orbits</label>
+          <label class="check"><input id="xCards" type="checkbox"> Show info cards (facts about what you go to)</label>
         </div>
       </details>
     </div>
@@ -361,6 +394,8 @@
   <script src="earth.js"></script>
   <script src="planet-maps.js"></script>
   <script src="planets.js"></script>
+  <script src="facts.js"></script>
+  <script src="cards.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

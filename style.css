@@ -722,7 +722,9 @@ body.ui-off .navmap,
 body.ui-off .pads,
 body.ui-off .help,
 body.ui-off .about,
-body.ui-off .timebar { display: none; }
+body.ui-off .timebar,
+body.ui-off .card,
+body.ui-off .compare { display: none; }
 .show-ui {
   position: fixed;
   right: calc(var(--gutter) + env(safe-area-inset-right));
@@ -742,6 +744,58 @@ body.ui-off .timebar { display: none; }
 }
 .show-ui:hover, .show-ui:focus-visible { opacity: 0.85; }
 .show-ui[hidden] { display: none; }
+
+/* ---------- Info card ---------- */
+.card {
+  position: fixed;
+  left: calc(var(--gutter) + env(safe-area-inset-left));
+  top: calc(var(--gutter) + 200px + env(safe-area-inset-top));
+  width: min(300px, calc(100vw - 2 * var(--gutter)));
+  max-height: calc(100vh - 420px);
+  min-height: 120px;
+  overflow: auto;
+  padding: 14px 16px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(14, 8, 20, 0.86);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  z-index: 5;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.card[hidden] { display: none; }
+.card-close { position: absolute; top: 10px; right: 10px; width: 30px !important; height: 30px !important; }
+.card-kind { margin: 0; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--blush); }
+.card h2 { margin: 2px 32px 8px 0; font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 26px; color: #fff4f8; }
+.card dl { margin: 0; display: grid; grid-template-columns: 1fr; gap: 0; }
+.card dt { color: var(--ink-dim); font-size: 12px; margin-top: 6px; }
+.card dd { margin: 0; color: var(--ink); }
+.card-live { margin-top: 10px !important; padding-top: 8px; border-top: 1px solid var(--line); }
+.card-live dd { color: #ffe0b8; font-variant-numeric: tabular-nums; }
+.card-note { margin: 10px 0 0; font-size: 12px; color: var(--ink-dim); font-style: italic; }
+@media (max-width: 640px) {
+  .card { top: auto; bottom: calc(var(--gutter) + 58px + env(safe-area-inset-bottom)); max-height: 26vh; min-height: 0; font-size: 12.5px; padding: 10px 14px; }
+  .card h2 { font-size: 20px; margin-bottom: 4px; }
+}
+
+/* ---------- Compare panels ---------- */
+.compare { width: min(720px, calc(100vw - 2 * var(--gutter))); z-index: 8; }
+.compare-body { overflow-x: auto; margin: 8px 0; }
+.compare-body svg { display: block; width: auto; height: auto; max-width: none; stroke: none; }
+.compare-body svg circle { stroke: none; }
+.cmp-label { fill: var(--ink-dim); font: 12px var(--sans); }
+.ladder { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ladder li { display: grid; grid-template-columns: 92px 1fr 104px; align-items: center; gap: 8px; font-size: 13px; }
+.ladder-name { color: var(--ink); }
+.ladder-bar { position: relative; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.07); }
+.ladder-bar::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--w); border-radius: 4px; background: linear-gradient(90deg, #6f8cff, #ffcf7a); }
+.ladder-time { color: #ffe0b8; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- Scale switch (solar system) ---------- */
+.scale-pick { display: none; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-dim); }
+body.in-earth .scale-pick { display: flex; }
+.scale-pick select { padding: 3px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--glass); color: var(--ink); font-size: 12.5px; }
 
 /* ---------- Loading screen ---------- */
 .loading {

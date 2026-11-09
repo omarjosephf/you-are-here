@@ -48,7 +48,10 @@
   const DEG = Math.PI / 180;
   const DAY_MS = 864e5;
   const AU_KM = 149597870.7;            // IAU 2012 (exact)
-  const EARTH_R_KM = 6371.0;            // NASA Earth Fact Sheet, volumetric mean radius
+  // Earth's radius for the scene's scale: half the 12,756 km equatorial
+  // diameter in the NASA Planetary Fact Sheet, the same kind of diameter the
+  // fact sheet gives for every planet, so true sizes keep its exact ratios.
+  const EARTH_R_KM = 6378.0;
   const EARTH_R = 2;                    // Earth's radius in scene units (every mode)
   const SUN_R_KM = 695700;              // IAU 2015 nominal solar radius
   const MOON_R_KM = 1737.4;             // NASA Moon Fact Sheet, volumetric mean radius
