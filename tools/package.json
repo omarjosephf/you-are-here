@@ -1,0 +1,16 @@
+{
+  "name": "you-are-here-tools",
+  "private": true,
+  "description": "Test harness for You Are Here (Playwright, plus local copies of Three.js and the fonts so tests run offline).",
+  "license": "MIT",
+  "scripts": {
+    "smoke": "node smoke.js"
+  },
+  "devDependencies": {
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/jost": "^5.3.0",
+    "astronomy-engine": "^2.1.19",
+    "playwright": "^1.64.1",
+    "three": "0.170.0"
+  }
+}

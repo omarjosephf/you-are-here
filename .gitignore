@@ -1,0 +1,22 @@
+# Private working notes and private checker terms: never publish
+PLAN.md
+plan-history/
+.private-terms.txt
+
+# Tooling and build output
+node_modules/
+tools/package-lock.json
+tools/shots/
+dist/
+.vercel/
+
+# Recorded videos
+*.webm
+*.mp4
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Python caches
+__pycache__/

@@ -1,0 +1,86 @@
+THIRD-PARTY NOTICES
+===================
+
+You Are Here includes or is built from the following work by others. Each
+keeps its own licence or terms. The project's own code is MIT (see LICENSE).
+
+
+Libraries
+---------
+
+Astronomy Engine 2.1.19 (astronomy.browser.min.js)
+  https://github.com/cosinekitty/astronomy
+  MIT License. Copyright (c) 2019-2023 Don Cross <cosinekitty@gmail.com>.
+  The full licence text is at the top of astronomy.browser.min.js.
+
+three.js r170 (vendor/three.module.min.js; also loaded from jsDelivr by the
+double-click copy)
+  https://threejs.org
+  MIT License. Copyright (c) 2010-2024 three.js authors.
+  The full licence text is in vendor/LICENSE-three.txt.
+
+
+Fonts (vendor/fonts/, files from Fontsource 5.3.0; Google Fonts for the
+double-click copy)
+-----
+
+Cormorant Garamond. Copyright 2015 The Cormorant Project Authors
+  (github.com/CatharsisFonts/Cormorant). SIL Open Font License 1.1:
+  vendor/fonts/OFL-Cormorant-Garamond.txt
+Jost. Copyright 2020 The Jost Project Authors
+  (https://github.com/indestructible-type/Jost). SIL Open Font License 1.1:
+  vendor/fonts/OFL-Jost.txt
+
+
+Maps and data
+-------------
+
+Earth's land outline (earth-map.js): Natural Earth (public domain,
+  https://www.naturalearthdata.com), via the world-atlas package 2.0.2
+  (https://github.com/topojson/world-atlas), ISC License:
+    Copyright 2013-2019 Michael Bostock
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+    IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+Earth's land colours (earth-map.js): NASA Blue Marble Next Generation, July
+  2004. Credit: NASA Earth Observatory.
+  https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/
+
+Earth's city lights (earth-map.js): NASA Black Marble 2016. Credit: NASA
+  Earth Observatory (Joshua Stevens), using Suomi NPP VIIRS data from Miguel
+  Roman, NASA GSFC.
+  https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/
+
+  NASA material is used under NASA's media usage guidelines
+  (https://www.nasa.gov/nasa-brand-center/images-and-media/): NASA is credited
+  as the source, its use does not imply NASA's endorsement, and the NASA
+  insignia and logotype are not used anywhere in this project.
+
+Earth's height (earth-map.js): NOAA National Centers for Environmental
+  Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model.
+  https://doi.org/10.25921/fd45-gt74 . CC0 1.0 (public domain dedication).
+
+Surface maps of Mercury, Venus, the Moon, Mars, Jupiter, Saturn, Uranus and
+  Neptune, and Saturn's ring strip (planet-maps.js, resampled to 128 x 64):
+  Solar System Scope (INOVE), https://www.solarsystemscope.com/textures/ ,
+  Creative Commons Attribution 4.0 International
+  (https://creativecommons.org/licenses/by/4.0/). Changes: resampled and
+  reduced to 64 colours.
+
+Pluto's map (planet-maps.js, resampled to 128 x 64): USGS Astrogeology
+  Science Center, "Pluto New Horizons LORRI-MVIC Global Mosaic 300m" (2017),
+  https://astrogeology.usgs.gov/search/map/pluto_new_horizons_lorri_mvic_global_mosaic_300m
+  Data from NASA's New Horizons mission. Please cite: Moore, J. M. et al.
+  (2016), The geology of Pluto and Charon through the eyes of New Horizons,
+  Science 351, 1284-1293. Changes: resampled, shifted to start at -180 deg
+  longitude, unimaged south filled with grey, tinted in the app.
+
+The science figures and their sources are listed in SOURCES.md.

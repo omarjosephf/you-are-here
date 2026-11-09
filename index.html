@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07040d">
+  <title>You Are Here</title>
+  <meta name="description" content="A 3D journey from the Milky Way to Earth: a model of our galaxy built from measured distances, and the Sun, the planets and Pluto where they really are on any date from 1900 to 2100.">
+  <meta name="author" content="Joseph Florendo">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="You Are Here">
+  <meta property="og:description" content="A 3D journey from the Milky Way to Earth, with every planet where it really is today.">
+  <meta property="og:image" content="preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <!-- fonts: the site's own copies; the double-click copy uses Google Fonts (browsers block fonts from file:// pages) -->
+  <script>
+    (function () {
+      var l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = location.protocol === 'file:'
+        ? 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Jost:wght@400;500&display=swap'
+        : 'vendor/fonts.css';
+      document.head.appendChild(l);
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="scene" aria-label="A spiral galaxy. Drag to look around, scroll or pinch to zoom in."></canvas>
+
+  <!-- Shown until the first picture is drawn -->
+  <div class="loading" id="loading" role="status">
+    <div>
+      <h1>You Are Here</h1>
+      <p>A 3D journey from the Milky Way to Earth</p>
+      <p class="loading-note">Loading the galaxy&hellip;</p>
+    </div>
+  </div>
+
+  <p class="hint" id="hint"></p>
+
+  <!-- Getting around: the map (click to fly) and Go to -->
+  <div class="navmap" id="navmap">
+    <canvas id="minimap" aria-label="Map of the galaxy, seen from above. Click a spot to fly there."></canvas>
+    <button class="pill" id="goBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="goMenu" title="Go to (G)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg>
+      Go to
+    </button>
+    <div class="go-menu" id="goMenu" role="menu" aria-label="Go to" hidden></div>
+  </div>
+
+  <!-- Getting around: hold an arrow to keep going -->
+  <div class="pads" id="pads">
+    <div class="pad-wrap">
+      <div class="pad" role="group" aria-label="Look around">
+        <button class="pad-btn up" type="button" data-axis="lookY" data-dir="1" aria-label="Go over the top" title="Go over the top (↑)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14l5-5 5 5"/></svg>
+        </button>
+        <button class="pad-btn left" type="button" data-axis="lookX" data-dir="-1" aria-label="Go around to the left" title="Go around to the left (←)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7l-5 5 5 5"/></svg>
+        </button>
+        <button class="pad-btn right" type="button" data-axis="lookX" data-dir="1" aria-label="Go around to the right" title="Go around to the right (→)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7l5 5-5 5"/></svg>
+        </button>
+        <button class="pad-btn down" type="button" data-axis="lookY" data-dir="-1" aria-label="Go underneath" title="Go underneath (↓)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+        </button>
+        <span class="pad-center" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M3 12s3.5-5.5 9-5.5 9 5.5 9 5.5-3.5 5.5-9 5.5S3 12 3 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+        </span>
+      </div>
+      <p class="pad-label">Look around</p>
+    </div>
+    <div class="pad-wrap">
+      <div class="pad" role="group" aria-label="Move">
+        <button class="pad-btn up" type="button" data-axis="moveZ" data-dir="1" aria-label="Fly forward" title="Fly forward (W)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14l5-5 5 5"/></svg>
+        </button>
+        <button class="pad-btn left" type="button" data-axis="moveX" data-dir="-1" aria-label="Slide left" title="Slide left (A)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7l-5 5 5 5"/></svg>
+        </button>
+        <button class="pad-btn right" type="button" data-axis="moveX" data-dir="1" aria-label="Slide right" title="Slide right (D)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7l5 5-5 5"/></svg>
+        </button>
+        <button class="pad-btn down" type="button" data-axis="moveZ" data-dir="-1" aria-label="Fly back" title="Fly back (S)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+        </button>
+        <span class="pad-center" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 4l6 15-6-3.5L6 19z"/></svg>
+        </span>
+      </div>
+      <p class="pad-label">Move</p>
+    </div>
+  </div>
+
+  <!-- Time: the one simulated clock (sky.js) -->
+  <section class="timebar" id="timebar" aria-label="Time">
+    <p class="time-date" id="timeDate"></p>
+    <div class="time-row">
+      <button class="round-btn small" id="timeSlower" type="button" aria-label="Time slower, or backwards" title="Slower, or backwards ([)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7l-5 5 5 5M18 7l-5 5 5 5"/></svg>
+      </button>
+      <button class="round-btn small" id="timePlay" type="button" aria-pressed="false" aria-label="Pause time" title="Pause or resume time (K)">
+        <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7v10M15 7v10"/></svg>
+        <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5v11l8.5-5.5z"/></svg>
+      </button>
+      <button class="round-btn small" id="timeFaster" type="button" aria-label="Time faster" title="Faster (])">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7l5 5-5 5M12 7l5 5-5 5"/></svg>
+      </button>
+      <button class="pill time-now" id="timeNow" type="button" title="Back to now (Y)">Now</button>
+    </div>
+    <p class="time-rate" id="timeRate" aria-live="polite"></p>
+    <p class="scale-note" id="scaleNote"></p>
+  </section>
+
+  <!-- Captions: short facts that type themselves out -->
+  <div class="caption off" id="caption" role="status">
+    <span class="caption-text" id="captionText"></span><span class="caption-caret" aria-hidden="true"></span>
+    <span class="caption-sub" id="captionSub"></span>
+  </div>
+
+  <!-- Zoom rail -->
+  <div class="zoom" id="zoom">
+    <button class="round-btn small" id="zoomIn" type="button" aria-label="Zoom in" title="Zoom in (+)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>
+    </button>
+    <div class="zoom-track" id="zoomTrack" role="slider" tabindex="0" aria-label="Zoom" aria-orientation="vertical"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="zoom-line"></div>
+      <div class="zoom-fill"></div>
+      <div class="zoom-thumb"></div>
+    </div>
+    <button class="round-btn small" id="zoomOut" type="button" aria-label="Zoom out" title="Zoom out (−)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>
+    </button>
+  </div>
+
+  <nav class="toolbar" aria-label="Galaxy controls">
+    <button class="round-btn" id="tourBtn" type="button" aria-pressed="false" aria-label="Tour" title="Play the tour (C)">
+      <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.8v12.4L18.5 12z"/></svg>
+      <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 6v12M15.5 6v12"/></svg>
+    </button>
+    <button class="round-btn" id="worldBtn" type="button" aria-label="Go to Earth" title="Go to Earth (J)">
+      <svg class="icon-earth" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5"/><path d="M4.6 10.5c2.4.4 3.6 1.7 4 3.6.3 1.6 1.9 2 2.9 1.2M13.5 4.9c-.6 1.6.2 2.8 1.8 3.1 1.5.3 2 1.5 1.6 2.8M19 15.5c-1.2-.4-2.4.1-2.9 1.3"/><path d="M2.8 15.8c-1.6 1.9-.9 3.3 1.6 3.5 3.4.3 9.3-1.6 13.8-4.8 4.4-3.1 5.6-6.2 2.2-6.9"/></svg>
+      <svg class="icon-galaxy" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.6-1.2 3.9 1.6 2.4 3.6-1.9 2.6-6.7 2.1-8-1.3C5 10.8 7.8 6.2 12.5 6c5.2-.2 8.4 4.8 6.6 9.6"/><path d="M12 12c-2.6 1.2-3.9-1.6-2.4-3.6"/><circle cx="12" cy="12" r="0.8"/></svg>
+    </button>
+    <button class="round-btn" id="pictureBtn" type="button" aria-label="Save a picture" title="Save a picture (P)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5h3.2L8.8 6h6.4l1.6 2.5H20V19H4z"/><circle cx="12" cy="13.5" r="3.4"/></svg>
+    </button>
+    <button class="round-btn" id="editBtn" type="button" aria-label="Edit your galaxy" title="Edit the galaxy and the tour (E)" aria-controls="editor" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5h4l10-10-4-4-10 10z"/><path d="M13 7l4 4"/></svg>
+    </button>
+    <button class="round-btn" id="fullBtn" type="button" aria-label="Full screen" title="Full screen (F)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9V4.5H9M19.5 9V4.5H15M4.5 15v4.5H9M19.5 15v4.5H15"/></svg>
+    </button>
+    <button class="round-btn" id="hideBtn" type="button" aria-label="Hide controls" title="Hide controls (H)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 3.5l17 17"/><path d="M10.5 6.1Q11.2 6 12 6c5 0 9 6 9 6a16 16 0 0 1-2.8 3.3M6.7 7.6A16 16 0 0 0 3 12s4 6 9 6a9 9 0 0 0 3.5-.7"/><path d="M9.9 10a3 3 0 0 0 4.1 4.1"/></svg>
+    </button>
+    <button class="round-btn" id="aboutBtn" type="button" aria-label="About this project" title="About (I)" aria-controls="about" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><path d="M12 7.6v.4"/></svg>
+    </button>
+    <button class="round-btn" id="helpBtn" type="button" aria-label="Controls help" title="Controls" aria-controls="help" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.5"/><path d="M12 16.6v.4"/></svg>
+    </button>
+  </nav>
+
+  <button class="show-ui" id="showUi" type="button" aria-label="Show controls" title="Show controls (H)" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s4-6 9-6 9 6 9 6-4 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="3"/></svg>
+  </button>
+
+  <!-- Controls help -->
+  <div class="help" id="help" role="dialog" aria-labelledby="helpTitle" hidden>
+    <h2 id="helpTitle">Getting around</h2>
+    <p class="help-note">About the shape: nobody has seen the Milky Way from outside, so this is a model. The central bar and the spiral arms follow measured distances to young star-forming regions on our side of the galaxy (Reid et al. 2019) and continue round the far side as smooth spirals. Distances are to scale; the galaxy turns far faster than the real one: the Sun takes about 200 million years to go round once.</p>
+    <dl>
+      <dt>Click the map (top left)</dt><dd>Fly there. Drag on it to keep steering.</dd>
+      <dt>Go to</dt><dd>Jump to the centre, the bar, the Orion Arm, Sol or Earth. In the solar system: Earth, Luna, Sol, each planet and Pluto, the next solar eclipse and the whole system</dd>
+      <dt class="key">Hold the arrow pads</dt><dd class="key">Look around (left pad) or fly (right pad)</dd>
+      <dt>Drag</dt><dd>Look around from any angle</dd>
+      <dt>Scroll, pinch, or + and −</dt><dd>Zoom in and out</dd>
+      <dt>Two-finger swipe sideways</dt><dd>Go around the galaxy</dd>
+      <dt>Right-drag, Shift-drag, or two fingers</dt><dd>Slide sideways</dd>
+      <dt>Double-click or double-tap</dt><dd>Fly to that spot</dd>
+      <dt>Planet button, or fly into Sol</dt><dd>Travel to Earth and back</dd>
+      <dt>On Earth</dt><dd>Drag to turn the planet; click the map to face any place</dd>
+      <dt class="key">W A S D</dt><dd class="key">Fly forward, left, back, right (hold Shift to go faster)</dd>
+      <dt class="key">Arrow keys</dt><dd class="key">Go around, over or under</dd>
+      <dt class="key">1 to 0</dt><dd class="key">The places in Go to</dd>
+      <dt class="key">G</dt><dd class="key">Open Go to</dd>
+      <dt class="key">J</dt><dd class="key">Travel to Earth, or back to the galaxy</dd>
+      <dt class="key">L</dt><dd class="key">The next real solar eclipse (on Earth)</dd>
+      <dt>Time (top right)</dt><dd>The date on screen. « and » change the speed (and run time backwards), the middle button pauses, Now returns to real time. 1900 to 2100.</dd>
+      <dt class="key">[ and ]</dt><dd class="key">Time slower or backwards, faster</dd>
+      <dt class="key">K</dt><dd class="key">Pause or resume time</dd>
+      <dt class="key">Y</dt><dd class="key">Back to now (live time)</dd>
+      <dt class="key">T</dt><dd class="key">A shooting star, right now (around Earth)</dd>
+      <dt class="key">N</dt><dd class="key">Names (arms and planets) on or off</dd>
+      <dt class="key">B</dt><dd class="key">The planets' orbits on or off</dd>
+      <dt class="key">O</dt><dd class="key">Ocean waves on or off</dd>
+      <dt class="key">R</dt><dd class="key">Back to the starting view</dd>
+      <dt class="key">C</dt><dd class="key">Play the tour from the start, or stop it</dd>
+      <dt class="key">V</dt><dd class="key">Play the tour for a video (full screen, no controls)</dd>
+      <dt class="key">E</dt><dd class="key">Edit the galaxy and the tour</dd>
+      <dt class="key">I</dt><dd class="key">About: what is real and what is illustrative</dd>
+      <dt class="key">M</dt><dd class="key">Reduce motion on or off</dd>
+      <dt class="key">P</dt><dd class="key">Save a picture</dd>
+      <dt class="key">Space</dt><dd class="key">Pause or resume the galaxy's spin</dd>
+      <dt class="key">H</dt><dd class="key">Hide or show the controls</dd>
+      <dt class="key">F</dt><dd class="key">Full screen</dd>
+    </dl>
+  </div>
+
+  <!-- About: what is computed, what is illustrative, and the credits -->
+  <div class="help about" id="about" role="dialog" aria-labelledby="aboutTitle" hidden>
+    <h2 id="aboutTitle">About You Are Here</h2>
+    <p class="help-note">A 3D journey from the Milky Way to Earth, by Joseph Florendo. <a href="SOURCES.md">Sources</a> &middot; <a href="THIRD-PARTY-NOTICES">Credits and licences</a></p>
+    <h3>Computed</h3>
+    <ul>
+      <li>Where the Sun, the Moon, the planets and Pluto are on the clock's date, from Astronomy Engine (accurate to within about 1 arcminute).</li>
+      <li>Earth's spin and tilt, day and night, the Moon's phase, and real solar and lunar eclipses.</li>
+      <li>Every planet's tilt and spin, from the IAU's rotation models (so Venus, Uranus and Pluto spin backwards).</li>
+      <li>The galactic plane meeting the solar system's plane at about 60&deg;.</li>
+    </ul>
+    <h3>Illustrative</h3>
+    <ul>
+      <li>The galaxy's shape is a model: nobody has seen the Milky Way from outside. Its spin is sped up enormously.</li>
+      <li>Sizes and distances are not to scale unless the note under the clock says so: planets are enlarged, the Sun is shrunk and distances are squeezed.</li>
+      <li>In the eclipse view the Sun and the Moon are drawn larger than they look, both by the same amount.</li>
+      <li>Shooting stars are decoration. City lights are today's, whatever the date.</li>
+      <li>Surface colours come from processed maps; Uranus and Neptune are nearly featureless, and Pluto's colour is a tint on a grey map whose southern part was never photographed.</li>
+    </ul>
+    <h3>Comfort</h3>
+    <label class="check"><input id="xCalm" type="checkbox"> Reduce motion (no automatic tour, drifting or shooting stars) <kbd>M</kbd></label>
+    <h3>Credits</h3>
+    <p class="help-note">Astronomy Engine by Don Cross (MIT). Three.js (MIT). Fonts: Cormorant Garamond and Jost (SIL Open Font License). Land: Natural Earth. Earth's colours and city lights: NASA Earth Observatory (Blue Marble, Black Marble). Height: NOAA ETOPO 2022. Planet maps: Solar System Scope (CC BY 4.0). Pluto: USGS Astrogeology, New Horizons mosaic. Galaxy: Reid et al. 2019 and others in the sources. NASA images are used under NASA's media guidelines; NASA does not endorse this project.</p>
+  </div>
+
+  <!-- Editor -->
+  <aside class="editor" id="editor" aria-labelledby="editorTitle" aria-hidden="true" inert>
+    <header class="editor-head">
+      <h2 id="editorTitle">Edit your galaxy</h2>
+      <button class="round-btn small" id="editorClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>
+      </button>
+    </header>
+
+    <div class="editor-body">
+      <section class="editor-section" aria-labelledby="tourTitle">
+        <h3 id="tourTitle">Tour (the play button)</h3>
+        <p class="note">One smooth flight: the galaxy, the Orion Arm and Sol, then the Sun, every planet (with Luna) and Pluto, the whole solar system, and back out. Each stop has a short caption.</p>
+        <div class="tour-length">
+          <label for="tourSeconds">How long the whole tour takes</label>
+          <div class="tour-length-row">
+            <input id="tourSeconds" type="number" min="30" max="600" step="1" inputmode="numeric">
+            <span>seconds</span>
+          </div>
+        </div>
+        <div class="presets" id="tourPresets" role="group" aria-label="Quick lengths">
+          <button class="btn chip" type="button" data-seconds="30">30 s</button>
+          <button class="btn chip" type="button" data-seconds="45">45 s</button>
+          <button class="btn chip" type="button" data-seconds="60">1 min</button>
+          <button class="btn chip" type="button" data-seconds="90">1½ min</button>
+          <button class="btn chip" type="button" data-seconds="120">2 min</button>
+          <button class="btn chip" type="button" data-seconds="180">3 min</button>
+          <button class="btn chip" type="button" data-seconds="150">2½ min</button>
+          <button class="btn chip" type="button" data-seconds="300">5 min</button>
+        </div>
+        <p class="note small" id="tourSummary" aria-live="polite"></p>
+        <label class="check"><input id="tourRepeat" type="checkbox"> Start again when it ends</label>
+        <label class="check"><input id="xEarthTour" type="checkbox"> Visit the solar system (the Sun, the planets and Pluto)</label>
+        <div class="foot-row tour-buttons">
+          <button class="btn primary" id="tourPlayBtn" type="button">Play from the start</button>
+          <button class="btn" id="tourVideoBtn" type="button">Play for a video</button>
+        </div>
+        <div class="video-save">
+          <h4>Save it as a video file</h4>
+          <p class="note small">No screen recorder needed: the tour plays once and downloads as a video, with the captions in it. Best in Chrome or Edge on a computer.</p>
+          <div class="foot-row">
+            <select id="videoFormat" aria-label="Video shape">
+              <option value="tall">Phone (1080 × 1920)</option>
+              <option value="wide">Widescreen (1920 × 1080)</option>
+            </select>
+            <button class="btn" id="videoSaveBtn" type="button">Save as a video</button>
+          </div>
+          <p class="note small">Leave it alone while it records (it takes as long as the tour). Press Esc to cancel.</p>
+        </div>
+        <p class="note small">Play for a video goes full screen and hides the controls and the pointer. It counts down 3, 2, 1 on a black screen, then plays the tour once. Start your screen recording before the countdown ends. Press H afterwards to bring the controls back.</p>
+      </section>
+
+      <details class="editor-section galaxy-look">
+        <summary><h3>Galaxy look</h3></summary>
+        <p class="note">The shape is the Milky Way's measured shape, so only its colours, number of stars and spin can change.</p>
+        <div class="themes" id="themeList" role="group" aria-label="Colour themes"></div>
+        <div class="look-grid">
+          <label for="gInside">Centre colour</label><input id="gInside" type="color">
+          <label for="gOutside">Edge colour</label><input id="gOutside" type="color">
+          <label for="gSpeed">Spin speed</label><input id="gSpeed" type="range" min="0" max="0.3" step="0.005">
+          <label for="gCount">Stars</label>
+          <select id="gCount">
+            <option value="50000">50,000</option>
+            <option value="100000">100,000</option>
+            <option value="150000">150,000</option>
+            <option value="200000">200,000</option>
+          </select>
+        </div>
+        <div class="checks">
+          <label class="check"><input id="xWaves" type="checkbox"> Ocean waves ripple across the galaxy</label>
+          <label class="check"><input id="xShooting" type="checkbox"> Shooting stars around Earth</label>
+          <label class="check"><input id="xNav" type="checkbox"> Show the map and arrow pads</label>
+          <label class="check"><input id="xLabels" type="checkbox"> Show names (the arms, the planets)</label>
+          <label class="check"><input id="xOrbits" type="checkbox"> Show the planets' orbits</label>
+        </div>
+      </details>
+    </div>
+
+    <footer class="editor-foot">
+      <div class="foot-row">
+        <button class="btn" id="exportBtn" type="button">Save backup</button>
+        <button class="btn" id="importBtn" type="button">Load backup</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden>
+        <button class="btn danger" id="resetBtn" type="button">Reset to defaults</button>
+      </div>
+      <p class="note small" id="saveStatus" aria-live="polite"></p>
+    </footer>
+  </aside>
+
+  <!-- The flash of light when you travel between the galaxy and Earth -->
+  <div class="warp" id="warp" aria-hidden="true"></div>
+
+  <!-- While a video file is being saved -->
+  <div class="rec-status" id="recStatus" hidden>
+    <span class="rec-dot" aria-hidden="true"></span>
+    <span id="recStatusText">Saving the video</span>
+    <button class="btn" id="recCancel" type="button">Cancel</button>
+  </div>
+
+  <!-- Fade in from black when the tour starts, and the 3-2-1 for a video -->
+  <div class="fade" id="fade" aria-hidden="true"><span class="countdown" id="countdown"></span></div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <span id="toastText"></span>
+    <button class="toast-action" id="toastAction" type="button" hidden></button>
+  </div>
+
+  <div class="fatal" id="fatal" hidden>
+    <div>
+      <h1>The galaxy couldn't start</h1>
+      <p></p>
+    </div>
+  </div>
+
+  <!-- config.js first (the settings), then the galaxy's shape, Earth's map, the astronomy (Astronomy Engine and the clock), Earth, then the program -->
+  <script src="config.js"></script>
+  <script src="galaxy-model.js"></script>
+  <script src="earth-map.js"></script>
+  <script src="astronomy.browser.min.js"></script>
+  <script src="sky.js"></script>
+  <script src="earth.js"></script>
+  <script src="planet-maps.js"></script>
+  <script src="planets.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

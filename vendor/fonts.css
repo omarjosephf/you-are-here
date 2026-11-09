@@ -1,0 +1,8 @@
+/* Fonts served by the site itself (Fontsource 5.3.0 files, latin subset).
+   Cormorant Garamond and Jost: SIL Open Font License 1.1 (see the OFL
+   texts in this folder). The double-click copy loads Google Fonts instead,
+   because browsers block fonts from file:// pages. */
+@font-face { font-family: 'Cormorant Garamond'; font-style: italic; font-weight: 500; font-display: swap; src: url(fonts/cormorant-garamond-latin-500-italic.woff2) format('woff2'); }
+@font-face { font-family: 'Cormorant Garamond'; font-style: italic; font-weight: 600; font-display: swap; src: url(fonts/cormorant-garamond-latin-600-italic.woff2) format('woff2'); }
+@font-face { font-family: 'Jost'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/jost-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Jost'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/jost-latin-500-normal.woff2) format('woff2'); }
