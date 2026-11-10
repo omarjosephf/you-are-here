@@ -6,7 +6,7 @@
 
 An interactive 3D Milky Way you can fly through, down to our solar system, with every planet where it really is on any date from 1900 to 2100. Everything is drawn as glowing particles in the browser with [three.js](https://threejs.org); the astronomy comes from [Astronomy Engine](https://github.com/cosinekitty/astronomy).
 
-By Joseph Florendo.
+By Joseph Florendo. **Live demo: [you-are-here-ashy.vercel.app](https://you-are-here-ashy.vercel.app)**
 
 ## What's in it
 
